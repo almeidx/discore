@@ -1,0 +1,40 @@
+{
+	"name": "@almeidx/discore",
+	"version": "0.1.0",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.mts",
+				"default": "./dist/index.mjs"
+			}
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"build:typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
+		"fmt": "oxfmt --write && oxlint --fix",
+		"lint": "oxfmt --check && oxlint",
+		"prepack": "pnpm build",
+		"test": "node --test './test/**/*.test.ts'"
+	},
+	"devDependencies": {
+		"@discordjs/core": "3.0.0-dev.1772496345-d6e160940",
+		"@discordjs/rest": "3.0.0-dev.1772496345-d6e160940",
+		"@discordjs/ws": "3.0.0-dev.1772496345-d6e160940",
+		"discord-api-types": "^0.38.40",
+		"oxfmt": "^0.36.0",
+		"oxlint": "^1.51.0",
+		"tsdown": "^0.20.3",
+		"typescript": "^5.9.3"
+	},
+	"peerDependencies": {
+		"@discordjs/core": ">=2.0.0 || >=3.0.0-dev"
+	},
+	"engines": {
+		"node": ">=24.0.0"
+	}
+}

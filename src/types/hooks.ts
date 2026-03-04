@@ -1,0 +1,22 @@
+import type { CommandContext, InteractionContext } from "./contexts.ts";
+
+/**
+ * Per-command lifecycle hooks. When set on a command, these override global hooks entirely.
+ */
+export interface CommandHooks {
+	/** Runs before the handler. Return `false` to cancel execution. */
+	beforeCommand?: (ctx: CommandContext) => Promise<boolean | void> | boolean | void;
+	/** Runs after the handler completes (even if it threw). */
+	afterCommand?: (ctx: CommandContext) => Promise<void> | void;
+	/** Runs when the handler throws. Return `false` to suppress the default error response. */
+	onError?: (ctx: CommandContext, error: unknown) => Promise<boolean | void> | boolean | void;
+}
+
+/**
+ * Global lifecycle hooks applied to all commands that don't define their own.
+ */
+export interface GlobalHooks {
+	beforeCommand?: (ctx: CommandContext) => Promise<boolean | void> | boolean | void;
+	afterCommand?: (ctx: CommandContext) => Promise<void> | void;
+	onError?: (ctx: InteractionContext, error: unknown) => Promise<boolean | void> | boolean | void;
+}
