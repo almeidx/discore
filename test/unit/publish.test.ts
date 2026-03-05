@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { defineCommand } from "../../src/definitions/command.ts";
-import { defineCommandGroup } from "../../src/definitions/command-group.ts";
+import { describe, it } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
+import { defineCommandGroup } from "../../src/definitions/command-group.ts";
+import { defineCommand } from "../../src/definitions/command.ts";
 
 describe("publishCommands", () => {
 	it("command definitions produce correct meta", () => {

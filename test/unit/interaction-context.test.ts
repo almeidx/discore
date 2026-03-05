@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { createInteractionContext } from "../../src/context/interaction.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
 import { chatInputInteraction } from "../fixtures/interactions.ts";
+import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("createInteractionContext", () => {
 	it("tracks replied state after reply", async () => {

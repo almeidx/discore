@@ -1,15 +1,15 @@
-import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it, mock } from "node:test";
 import { createComponentRouter } from "../../src/routing/component-router.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
-import { buttonInteraction, selectMenuInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
+import type { ButtonContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
 import {
 	DefinitionType,
 	type ButtonDefinition,
 	type SelectMenuDefinition,
 	type ModalDefinition,
 } from "../../src/types/definitions.ts";
-import type { ButtonContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
+import { buttonInteraction, selectMenuInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
+import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("createComponentRouter", () => {
 	it("matches button by regex and extracts params", async () => {

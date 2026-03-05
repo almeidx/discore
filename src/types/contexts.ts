@@ -1,4 +1,10 @@
 import type { API } from "@discordjs/core";
+import type {
+	CreateInteractionResponseOptions,
+	CreateInteractionFollowUpResponseOptions,
+	EditInteractionResponseOptions,
+	CreateModalResponseOptions,
+} from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type {
 	APIChatInputApplicationCommandInteraction,
@@ -8,14 +14,6 @@ import type {
 	APIInteraction,
 	APIApplicationCommandOptionChoice,
 } from "discord-api-types/v10";
-
-import type {
-	CreateInteractionResponseOptions,
-	CreateInteractionFollowUpResponseOptions,
-	EditInteractionResponseOptions,
-	CreateModalResponseOptions,
-} from "@discordjs/core";
-
 import type { ModalFields } from "../modal-fields.ts";
 import type { ComponentInteractionContext } from "./internal.ts";
 

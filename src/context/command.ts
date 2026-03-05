@@ -1,6 +1,12 @@
 import type { API } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIChatInputApplicationCommandInteraction } from "discord-api-types/v10";
+import { awaitComponent } from "../collectors/await-component.ts";
+import { awaitModal } from "../collectors/await-modal.ts";
+import { collectComponents } from "../collectors/collect-components.ts";
+import type { CollectorStore } from "../collectors/collector-store.ts";
+import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
+import { parseOptions } from "../options-parser.ts";
 import type {
 	CommandContext,
 	ModalContext,
@@ -10,13 +16,7 @@ import type {
 	ComponentCollector,
 } from "../types/contexts.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
-import type { CollectorStore } from "../collectors/collector-store.ts";
-import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
 import { createInteractionContext } from "./interaction.ts";
-import { parseOptions } from "../options-parser.ts";
-import { awaitComponent } from "../collectors/await-component.ts";
-import { awaitModal } from "../collectors/await-modal.ts";
-import { collectComponents } from "../collectors/collect-components.ts";
 
 export function createCommandContext(
 	api: API,

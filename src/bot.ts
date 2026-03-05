@@ -2,6 +2,11 @@ import { API, type CreateInteractionResponseOptions } from "@discordjs/core";
 import type { REST } from "@discordjs/rest";
 import { WebSocketShardEvents, type WebSocketManager } from "@discordjs/ws";
 import { GatewayDispatchEvents, type APIInteraction, type GatewayDispatchPayload } from "discord-api-types/v10";
+import { createCollectorStore } from "./collectors/collector-store.ts";
+import { createModalCollectorStore } from "./collectors/modal-collector-store.ts";
+import { createComponentRouter } from "./routing/component-router.ts";
+import { createEventRouter } from "./routing/event-router.ts";
+import { createInteractionRouter } from "./routing/interaction-router.ts";
 import {
 	DefinitionType,
 	type AnyCommandDefinition,
@@ -15,11 +20,6 @@ import {
 	type AutocompleteDefinition,
 } from "./types/definitions.ts";
 import type { GlobalHooks } from "./types/hooks.ts";
-import { createCollectorStore } from "./collectors/collector-store.ts";
-import { createModalCollectorStore } from "./collectors/modal-collector-store.ts";
-import { createComponentRouter } from "./routing/component-router.ts";
-import { createEventRouter } from "./routing/event-router.ts";
-import { createInteractionRouter } from "./routing/interaction-router.ts";
 
 /** Configuration for {@link createBot}. */
 export interface CreateBotOptions {

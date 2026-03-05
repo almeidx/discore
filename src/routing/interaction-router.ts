@@ -11,18 +11,18 @@ import {
 	type APIApplicationCommandAutocompleteInteraction,
 	MessageFlags,
 } from "discord-api-types/v10";
-import type { CommandDefinition, CommandGroupDefinition, AutocompleteDefinition } from "../types/definitions.ts";
-import type { GlobalHooks } from "../types/hooks.ts";
+import { ComponentType } from "discord-api-types/v10";
 import type { CollectorStore } from "../collectors/collector-store.ts";
 import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
-import type { ComponentRouter } from "./component-router.ts";
-import { createCommandContext } from "../context/command.ts";
 import { createAutocompleteContext } from "../context/autocomplete.ts";
 import { createButtonContext } from "../context/button.ts";
-import { createSelectMenuContext } from "../context/select-menu.ts";
+import { createCommandContext } from "../context/command.ts";
 import { createModalContext } from "../context/modal.ts";
+import { createSelectMenuContext } from "../context/select-menu.ts";
+import type { CommandDefinition, CommandGroupDefinition, AutocompleteDefinition } from "../types/definitions.ts";
+import type { GlobalHooks } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
-import { ComponentType } from "discord-api-types/v10";
+import type { ComponentRouter } from "./component-router.ts";
 
 export type ErrorResponseOption =
 	| CreateInteractionResponseOptions

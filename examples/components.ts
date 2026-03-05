@@ -1,6 +1,3 @@
-import { REST } from "@discordjs/rest";
-import { WebSocketManager } from "@discordjs/ws";
-import { GatewayIntentBits, MessageFlags, Routes, type RESTGetAPIGatewayBotResult } from "discord-api-types/v10";
 import {
 	createBot,
 	defineCommand,
@@ -9,6 +6,9 @@ import {
 	defineModal,
 	publishCommands,
 } from "@almeidx/discore";
+import { REST } from "@discordjs/rest";
+import { WebSocketManager } from "@discordjs/ws";
+import { GatewayIntentBits, MessageFlags, Routes, type RESTGetAPIGatewayBotResult } from "discord-api-types/v10";
 
 const token = process.env.DISCORD_TOKEN!;
 

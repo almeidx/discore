@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { createModalFields } from "../../src/modal-fields.ts";
 import { modalSubmitInteraction } from "../fixtures/interactions.ts";
 

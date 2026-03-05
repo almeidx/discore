@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
-import { defineCommand } from "../../src/definitions/command.ts";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import type { Snowflake, APIAttachment } from "discord-api-types/v10";
+import { defineCommand } from "../../src/definitions/command.ts";
 
 describe("options type inference", () => {
 	it("infers required string option", () => {

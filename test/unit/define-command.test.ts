@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { defineCommand } from "../../src/definitions/command.ts";
 import { DefinitionType } from "../../src/types/definitions.ts";
-import { ApplicationCommandOptionType } from "discord-api-types/v10";
 
 describe("defineCommand", () => {
 	it("returns a command definition with correct shape", () => {

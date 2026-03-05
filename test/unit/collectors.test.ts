@@ -1,12 +1,12 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createCollectorStore } from "../../src/collectors/collector-store.ts";
+import { describe, it } from "node:test";
 import { awaitComponent } from "../../src/collectors/await-component.ts";
 import { collectComponents } from "../../src/collectors/collect-components.ts";
+import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { CollectorTimeoutError } from "../../src/collectors/errors.ts";
 import { createButtonContext } from "../../src/context/button.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
 import { buttonInteraction } from "../fixtures/interactions.ts";
+import { createMockAPI } from "../fixtures/mock-api.ts";
 
 function fakeButtonCtx(customId: string) {
 	return createButtonContext(createMockAPI() as any, {} as any, buttonInteraction(customId), {});

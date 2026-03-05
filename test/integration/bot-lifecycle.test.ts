@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { createBot } from "../../src/bot.ts";
 import { createMockREST } from "../fixtures/mock-api.ts";
 import { createMockGateway } from "../fixtures/mock-gateway.ts";

@@ -1,14 +1,14 @@
-import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it, mock } from "node:test";
+import { GatewayDispatchEvents } from "discord-api-types/v10";
 import { createBot } from "../../src/bot.ts";
 import { defineButton } from "../../src/definitions/button.ts";
-import { defineSelectMenu } from "../../src/definitions/select-menu.ts";
 import { defineModal } from "../../src/definitions/modal.ts";
+import { defineSelectMenu } from "../../src/definitions/select-menu.ts";
+import type { ButtonContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
+import { buttonInteraction, selectMenuInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
 import { createMockREST } from "../fixtures/mock-api.ts";
 import { createMockGateway } from "../fixtures/mock-gateway.ts";
-import { buttonInteraction, selectMenuInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
-import { GatewayDispatchEvents } from "discord-api-types/v10";
-import type { ButtonContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
 
 describe("component flow integration", () => {
 	it("routes button interaction to handler", async () => {

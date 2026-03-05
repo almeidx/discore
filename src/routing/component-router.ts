@@ -2,10 +2,10 @@ import type { API } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIMessageComponentInteraction, APIModalSubmitInteraction } from "discord-api-types/v10";
 import { ComponentType } from "discord-api-types/v10";
-import type { ButtonDefinition, SelectMenuDefinition, ModalDefinition } from "../types/definitions.ts";
 import { createButtonContext } from "../context/button.ts";
-import { createSelectMenuContext } from "../context/select-menu.ts";
 import { createModalContext } from "../context/modal.ts";
+import { createSelectMenuContext } from "../context/select-menu.ts";
+import type { ButtonDefinition, SelectMenuDefinition, ModalDefinition } from "../types/definitions.ts";
 
 export interface ComponentRouter {
 	handleComponent(api: API, gateway: WebSocketManager, interaction: APIMessageComponentInteraction): Promise<void>;

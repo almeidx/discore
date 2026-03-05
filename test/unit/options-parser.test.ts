@@ -1,5 +1,5 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { parseOptions } from "../../src/options-parser.ts";
 import { chatInputInteraction, subcommandInteraction } from "../fixtures/interactions.ts";

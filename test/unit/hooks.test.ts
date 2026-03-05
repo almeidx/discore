@@ -1,12 +1,12 @@
-import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
-import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
-import { createComponentRouter } from "../../src/routing/component-router.ts";
+import { describe, it, mock } from "node:test";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { createModalCollectorStore } from "../../src/collectors/modal-collector-store.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
-import { chatInputInteraction } from "../fixtures/interactions.ts";
+import { createComponentRouter } from "../../src/routing/component-router.ts";
+import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
 import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
+import { chatInputInteraction } from "../fixtures/interactions.ts";
+import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("hooks", () => {
 	function createRouter(cmd: CommandDefinition, globalHooks = {}) {

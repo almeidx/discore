@@ -1,13 +1,13 @@
-import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it, mock } from "node:test";
+import { GatewayDispatchEvents } from "discord-api-types/v10";
 import { createBot } from "../../src/bot.ts";
-import { defineCommand } from "../../src/definitions/command.ts";
 import { defineButton } from "../../src/definitions/button.ts";
+import { defineCommand } from "../../src/definitions/command.ts";
 import { defineModal } from "../../src/definitions/modal.ts";
+import { chatInputInteraction, buttonInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
 import { createMockREST } from "../fixtures/mock-api.ts";
 import { createMockGateway } from "../fixtures/mock-gateway.ts";
-import { chatInputInteraction, buttonInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
-import { GatewayDispatchEvents } from "discord-api-types/v10";
 describe("collector flow integration", () => {
 	it("collector intercepts component before persistent handler", async () => {
 		const persistentHandler = mock.fn(async () => {});

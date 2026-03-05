@@ -1,7 +1,7 @@
 import type { API } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
-import type { EventDefinition } from "../types/definitions.ts";
 import { createEventContext } from "../context/event.ts";
+import type { EventDefinition } from "../types/definitions.ts";
 
 export interface EventRouter {
 	dispatch(event: string, data: unknown, api: API, gateway: WebSocketManager, shardId: number): Promise<void>;

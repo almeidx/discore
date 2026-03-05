@@ -1,9 +1,9 @@
-import { describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it, mock } from "node:test";
 import { GatewayDispatchEvents } from "discord-api-types/v10";
 import { createEventRouter } from "../../src/routing/event-router.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
 import { DefinitionType, type EventDefinition } from "../../src/types/definitions.ts";
+import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("createEventRouter", () => {
 	it("dispatches event to matching handler", async () => {

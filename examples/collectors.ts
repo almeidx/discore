@@ -1,3 +1,4 @@
+import { createBot, defineCommand, CollectorTimeoutError, publishCommands } from "@almeidx/discore";
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import {
@@ -7,7 +8,6 @@ import {
 	Routes,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
-import { createBot, defineCommand, CollectorTimeoutError, publishCommands } from "@almeidx/discore";
 
 const token = process.env.DISCORD_TOKEN!;
 
