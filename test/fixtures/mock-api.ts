@@ -47,7 +47,8 @@ export function createMockAPI() {
 		applications: {
 			getCurrent: mock.fn(async () => ({ id: "123456789" })),
 		},
-	} as any;}
+	} as any;
+}
 
 export function createMockREST() {
 	return {
@@ -57,4 +58,5 @@ export function createMockREST() {
 		delete: mock.fn(async () => undefined),
 		put: mock.fn(async () => undefined),
 		cdn: {},
-	} as any;}
+	} as any;
+}
