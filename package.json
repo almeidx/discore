@@ -36,20 +36,22 @@
 		"fmt": "oxfmt --write && oxlint --fix",
 		"lint": "oxfmt --check && oxlint",
 		"prepack": "pnpm build",
-		"test": "node --test './test/**/*.test.ts'"
+		"test": "node --test './test/**/*.test.ts'",
+		"prepare": "husky .github/husky"
 	},
 	"devDependencies": {
 		"@discordjs/core": "3.0.0-dev.1772496345-d6e160940",
 		"@discordjs/rest": "3.0.0-dev.1772496345-d6e160940",
 		"@discordjs/ws": "3.0.0-dev.1772496345-d6e160940",
 		"discord-api-types": "^0.38.40",
+		"husky": "^9.1.7",
 		"oxfmt": "^0.36.0",
 		"oxlint": "^1.51.0",
 		"tsdown": "^0.20.3",
 		"typescript": "^5.9.3"
 	},
 	"peerDependencies": {
-		"@discordjs/core": ">=2.0.0 || >=3.0.0-dev"
+		"@discordjs/core": ">=3.0.0-dev"
 	},
 	"engines": {
 		"node": ">=24.0.0"
