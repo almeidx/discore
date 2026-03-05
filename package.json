@@ -1,6 +1,23 @@
 {
 	"name": "@almeidx/discore",
 	"version": "0.1.0",
+	"description": "A lightweight, functional Discord bot framework built on @discordjs/core",
+	"keywords": [
+		"bot",
+		"commands",
+		"core",
+		"discord",
+		"discordjs",
+		"framework"
+	],
+	"homepage": "https://github.com/almeidx/discore#readme",
+	"bugs": "https://github.com/almeidx/discore/issues",
+	"license": "Apache-2.0",
+	"author": "almeidx (https://almeidx.dev)",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/almeidx/discore.git"
+	},
 	"files": [
 		"dist"
 	],
