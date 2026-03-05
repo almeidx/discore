@@ -1,6 +1,7 @@
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import {
+	ButtonStyle,
 	ComponentType,
 	GatewayDispatchEvents,
 	GatewayIntentBits,
@@ -29,8 +30,8 @@ const confirm = defineCommand({
 				{
 					type: ComponentType.ActionRow,
 					components: [
-						{ type: ComponentType.Button, custom_id: "yes", label: "Yes", style: 3 },
-						{ type: ComponentType.Button, custom_id: "no", label: "No", style: 4 },
+						{ type: ComponentType.Button, custom_id: "yes", label: "Yes", style: ButtonStyle.Success },
+						{ type: ComponentType.Button, custom_id: "no", label: "No", style: ButtonStyle.Danger },
 					],
 				},
 			],
@@ -43,11 +44,11 @@ const confirm = defineCommand({
 			});
 
 			console.log(`[/confirm] user clicked: ${response.customId}`);
-			await response.reply({ content: `You clicked: ${response.customId}` });
+			await response.update({ content: `You chose: ${response.customId}`, components: [] });
 		} catch (error) {
 			if (error instanceof CollectorTimeoutError) {
 				console.log("[/confirm] timed out");
-				await ctx.editReply({ content: "Timed out!" });
+				await ctx.editReply({ content: "Timed out!", components: [] });
 			}
 		}
 	},
@@ -63,8 +64,8 @@ const poll = defineCommand({
 				{
 					type: ComponentType.ActionRow,
 					components: [
-						{ type: ComponentType.Button, custom_id: "option_a", label: "Option A", style: 1 },
-						{ type: ComponentType.Button, custom_id: "option_b", label: "Option B", style: 1 },
+						{ type: ComponentType.Button, custom_id: "option_a", label: "Option A", style: ButtonStyle.Primary },
+						{ type: ComponentType.Button, custom_id: "option_b", label: "Option B", style: ButtonStyle.Primary },
 					],
 				},
 			],

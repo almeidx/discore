@@ -1,10 +1,12 @@
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import {
+	ButtonStyle,
+	ComponentType,
 	GatewayDispatchEvents,
 	GatewayIntentBits,
-	MessageFlags,
 	Routes,
+	TextInputStyle,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
 import {
@@ -26,12 +28,58 @@ const ready = defineEvent({
 	},
 });
 
+const verify = defineCommand({
+	data: { name: "verify", description: "Send a verification button" },
+	handler: async (ctx) => {
+		const userId = ctx.interaction.member?.user.id ?? ctx.interaction.user?.id ?? "unknown";
+		console.log(`[/verify] sending button for user ${userId}`);
+		await ctx.reply({
+			content: "Click to verify:",
+			components: [
+				{
+					type: ComponentType.ActionRow,
+					components: [
+						{ type: ComponentType.Button, custom_id: `verify:${userId}`, label: "Verify", style: ButtonStyle.Success },
+					],
+				},
+			],
+		});
+	},
+});
+
 const verifyButton = defineButton({
 	customId: /^verify:(?<userId>\d+)$/,
 	handler: async (ctx) => {
 		console.log(`[button] verify clicked for user ${ctx.params.userId}`);
-		const userId = ctx.params.userId;
-		await ctx.reply({ content: `Verified user ${userId}!`, flags: MessageFlags.Ephemeral });
+		await ctx.update({ content: `Verified user ${ctx.params.userId}!`, components: [] });
+	},
+});
+
+const roles = defineCommand({
+	data: { name: "roles", description: "Pick your roles" },
+	handler: async (ctx) => {
+		console.log("[/roles] sending role select menu");
+		await ctx.reply({
+			content: "Select your roles:",
+			components: [
+				{
+					type: ComponentType.ActionRow,
+					components: [
+						{
+							type: ComponentType.StringSelect,
+							custom_id: "roles:main",
+							min_values: 1,
+							max_values: 3,
+							options: [
+								{ label: "Announcements", value: "announcements" },
+								{ label: "Events", value: "events" },
+								{ label: "Gaming", value: "gaming" },
+							],
+						},
+					],
+				},
+			],
+		});
 	},
 });
 
@@ -39,22 +87,10 @@ const roleSelect = defineSelectMenu({
 	customId: /^roles:(?<panel>\w+)$/,
 	handler: async (ctx) => {
 		console.log(`[select] roles selected on panel "${ctx.params.panel}": ${ctx.values.join(", ")}`);
-		const panel = ctx.params.panel;
-		const selectedRoles = ctx.values;
-		await ctx.reply({
-			content: `Updated roles from panel "${panel}": ${selectedRoles.join(", ")}`,
-			flags: MessageFlags.Ephemeral,
+		await ctx.update({
+			content: `Roles updated: ${ctx.values.join(", ")}`,
+			components: [],
 		});
-	},
-});
-
-const feedbackModal = defineModal({
-	customId: /^feedback:(?<type>\w+)$/,
-	handler: async (ctx) => {
-		console.log(`[modal] feedback submitted (type: ${ctx.params.type})`);
-		const type = ctx.params.type;
-		const description = ctx.fields.getRequired("description");
-		await ctx.reply({ content: `Received ${type} feedback: ${description}` });
 	},
 });
 
@@ -67,19 +103,28 @@ const feedback = defineCommand({
 			title: "Submit Feedback",
 			components: [
 				{
-					type: 1,
+					type: ComponentType.ActionRow,
 					components: [
 						{
-							type: 4,
+							type: ComponentType.TextInput,
 							custom_id: "description",
 							label: "Description",
-							style: 2,
+							style: TextInputStyle.Paragraph,
 							required: true,
 						},
 					],
 				},
 			],
 		});
+	},
+});
+
+const feedbackModal = defineModal({
+	customId: /^feedback:(?<type>\w+)$/,
+	handler: async (ctx) => {
+		console.log(`[modal] feedback submitted (type: ${ctx.params.type})`);
+		const description = ctx.fields.getRequired("description");
+		await ctx.reply({ content: `Received ${ctx.params.type} feedback: ${description}` });
 	},
 });
 
@@ -93,13 +138,13 @@ const gateway = new WebSocketManager({
 createBot({
 	rest,
 	gateway,
-	commands: [feedback],
+	commands: [verify, roles, feedback],
 	events: [ready],
 	interactions: [verifyButton, roleSelect, feedbackModal],
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [feedback] });
+await publishCommands({ token, commands: [verify, roles, feedback] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();
