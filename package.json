@@ -32,7 +32,7 @@
 	},
 	"scripts": {
 		"build": "tsdown",
-		"build:typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
+		"build:typecheck": "tsc --noEmit",
 		"fmt": "oxfmt --write && oxlint --fix",
 		"lint": "oxfmt --check && oxlint",
 		"prepack": "pnpm build",
