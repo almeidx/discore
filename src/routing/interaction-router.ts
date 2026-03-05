@@ -162,7 +162,7 @@ export function createInteractionRouter(config: {
 		const def = userCommands.get(interaction.data.name);
 		if (!def) return;
 
-		const ctx = createUserCommandContext(api, gateway, interaction);
+		const ctx = createUserCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
 
 		const activeHooks = {
 			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
@@ -205,7 +205,7 @@ export function createInteractionRouter(config: {
 		const def = messageCommands.get(interaction.data.name);
 		if (!def) return;
 
-		const ctx = createMessageCommandContext(api, gateway, interaction);
+		const ctx = createMessageCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
 
 		const activeHooks = {
 			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,

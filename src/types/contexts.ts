@@ -1,9 +1,11 @@
 import type { API } from "@discordjs/core";
 import type {
 	CreateInteractionResponseOptions,
+	CreateInteractionDeferResponseOptions,
 	CreateInteractionFollowUpResponseOptions,
 	EditInteractionResponseOptions,
 	CreateModalResponseOptions,
+	CreateInteractionUpdateMessageResponseOptions,
 } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type {
@@ -32,7 +34,7 @@ export interface InteractionContext extends BaseContext {
 	replied: boolean;
 	deferred: boolean;
 	reply(data: CreateInteractionResponseOptions): Promise<void>;
-	defer(options?: { ephemeral?: boolean }): Promise<void>;
+	defer(data?: CreateInteractionDeferResponseOptions): Promise<void>;
 	followUp(data: CreateInteractionFollowUpResponseOptions): Promise<void>;
 	editReply(data: EditInteractionResponseOptions): Promise<void>;
 	showModal(data: CreateModalResponseOptions): Promise<void>;
@@ -82,6 +84,7 @@ export interface ButtonContext extends InteractionContext {
 	interaction: APIMessageComponentInteraction;
 	customId: string;
 	params: Record<string, string>;
+	update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void>;
 }
 
 /** Context passed to select menu interaction handlers. Selected values are in {@link values}. */
@@ -90,6 +93,7 @@ export interface SelectMenuContext extends InteractionContext {
 	customId: string;
 	params: Record<string, string>;
 	values: string[];
+	update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void>;
 }
 
 /** Context passed to modal submission handlers. Access submitted values via {@link fields}. */
@@ -104,11 +108,17 @@ export interface UserCommandContext extends InteractionContext {
 	interaction: APIUserApplicationCommandInteraction;
 	targetUser: APIUser;
 	targetMember: APIInteractionDataResolvedGuildMember | undefined;
+	awaitComponent(options: AwaitComponentOptions): Promise<ComponentInteractionContext>;
+	awaitModal(options: AwaitModalOptions): Promise<ModalContext>;
+	collectComponents(options: CollectComponentsOptions): ComponentCollector;
 }
 
 export interface MessageCommandContext extends InteractionContext {
 	interaction: APIMessageApplicationCommandInteraction;
 	targetMessage: APIMessage;
+	awaitComponent(options: AwaitComponentOptions): Promise<ComponentInteractionContext>;
+	awaitModal(options: AwaitModalOptions): Promise<ModalContext>;
+	collectComponents(options: CollectComponentsOptions): ComponentCollector;
 }
 
 /** Context passed to autocomplete handlers. */
