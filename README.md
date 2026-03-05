@@ -119,4 +119,4 @@ See the [`examples/`](./examples) directory.
 
 ## License
 
-ISC
+[Apache-2.0](./LICENSE)
