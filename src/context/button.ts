@@ -1,4 +1,4 @@
-import type { API } from "@discordjs/core";
+import type { API, CreateInteractionUpdateMessageResponseOptions } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIMessageComponentInteraction } from "discord-api-types/v10";
 import type { ButtonContext } from "../types/contexts.ts";
@@ -17,5 +17,9 @@ export function createButtonContext(
 		interaction,
 		customId: interaction.data.custom_id,
 		params,
+
+		async update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void> {
+			await api.interactions.updateMessage(interaction.id, interaction.token, data);
+		},
 	};
 }

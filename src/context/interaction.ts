@@ -1,13 +1,13 @@
 import type { API } from "@discordjs/core";
 import type {
 	CreateInteractionResponseOptions,
+	CreateInteractionDeferResponseOptions,
 	CreateInteractionFollowUpResponseOptions,
 	EditInteractionResponseOptions,
 	CreateModalResponseOptions,
 } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIInteraction } from "discord-api-types/v10";
-import { MessageFlags } from "discord-api-types/v10";
 import type { InteractionContext } from "../types/contexts.ts";
 
 export function createInteractionContext(
@@ -40,9 +40,8 @@ export function createInteractionContext(
 			replied = true;
 		},
 
-		async defer(options?: { ephemeral?: boolean }): Promise<void> {
-			const flags = options?.ephemeral ? MessageFlags.Ephemeral : undefined;
-			await api.interactions.defer(interaction.id, interaction.token, { flags });
+		async defer(data?: CreateInteractionDeferResponseOptions): Promise<void> {
+			await api.interactions.defer(interaction.id, interaction.token, data);
 			deferred = true;
 			replied = true;
 		},

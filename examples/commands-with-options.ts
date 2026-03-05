@@ -4,6 +4,7 @@ import {
 	ApplicationCommandOptionType,
 	GatewayDispatchEvents,
 	GatewayIntentBits,
+	MessageFlags,
 	Routes,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
@@ -50,7 +51,7 @@ const userinfo = defineCommand({
 		const isEphemeral = ctx.options.ephemeral ?? false;
 
 		if (isEphemeral) {
-			await ctx.defer({ ephemeral: true });
+			await ctx.defer({ flags: MessageFlags.Ephemeral });
 		} else {
 			await ctx.defer();
 		}

@@ -22,6 +22,7 @@ const riskyCommand = defineCommand({
 		},
 	},
 	handler: async (ctx) => {
+		console.log("[risky] handler");
 		await ctx.reply({ content: "This worked!" });
 	},
 });
