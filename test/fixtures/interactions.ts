@@ -34,8 +34,7 @@ export function chatInputInteraction(
 			id: "444444444444444444",
 			name,
 			type: ApplicationCommandType.ChatInput,
-			options: options as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- test fixture
-			resolved: {},
+			options: options as any,			resolved: {},
 		},
 	} as unknown as APIChatInputApplicationCommandInteraction;
 }
@@ -58,8 +57,7 @@ export function subcommandInteraction(
 					type: ApplicationCommandOptionType.Subcommand,
 					options,
 				},
-			] as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- test fixture
-			resolved: {},
+			] as any,			resolved: {},
 		},
 	} as unknown as APIChatInputApplicationCommandInteraction;
 }
@@ -152,7 +150,6 @@ export function autocompleteInteraction(
 					...focusedOption,
 					focused: true,
 				},
-			] as any, // eslint-disable-line @typescript-eslint/no-explicit-any -- test fixture
-		},
+			] as any,		},
 	} as unknown as APIApplicationCommandAutocompleteInteraction;
 }

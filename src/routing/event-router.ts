@@ -7,8 +7,8 @@ export interface EventRouter {
 	dispatch(event: string, data: unknown, api: API, gateway: WebSocketManager, shardId: number): Promise<void>;
 }
 
-export function createEventRouter(events: EventDefinition[]): EventRouter {
-	const handlerMap = new Map<string, EventDefinition[]>();
+export function createEventRouter(events: EventDefinition<any>[]): EventRouter {
+	const handlerMap = new Map<string, EventDefinition<any>[]>();
 
 	for (const def of events) {
 		const existing = handlerMap.get(def.event) ?? [];

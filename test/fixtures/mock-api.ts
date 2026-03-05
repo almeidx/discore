@@ -47,8 +47,7 @@ export function createMockAPI() {
 		applications: {
 			getCurrent: mock.fn(async () => ({ id: "123456789" })),
 		},
-	} as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- mock API
-}
+	} as any;}
 
 export function createMockREST() {
 	return {
@@ -58,5 +57,4 @@ export function createMockREST() {
 		delete: mock.fn(async () => undefined),
 		put: mock.fn(async () => undefined),
 		cdn: {},
-	} as any; // eslint-disable-line @typescript-eslint/no-explicit-any -- mock REST
-}
+	} as any;}

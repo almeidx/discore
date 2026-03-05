@@ -1,7 +1,13 @@
 import { createBot, defineCommand, defineEvent, publishCommands } from "@almeidx/discore";
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
-import { GatewayIntentBits, Routes, type RESTGetAPIGatewayBotResult } from "discord-api-types/v10";
+import {
+	GatewayDispatchEvents,
+	GatewayIntentBits,
+	Routes,
+	type GatewayMessageCreateDispatchData,
+	type RESTGetAPIGatewayBotResult,
+} from "discord-api-types/v10";
 
 const token = process.env.DISCORD_TOKEN!;
 
@@ -13,16 +19,23 @@ const ping = defineCommand({
 });
 
 const ready = defineEvent({
-	event: "READY",
+	event: GatewayDispatchEvents.Ready,
 	handler: async () => {
 		console.log("Bot is online!");
+	},
+});
+
+const onMessage = defineEvent<GatewayMessageCreateDispatchData>({
+	event: GatewayDispatchEvents.MessageCreate,
+	handler: async (ctx) => {
+		console.log(`${ctx.event.author.username}: ${ctx.event.content}`);
 	},
 });
 
 const rest = new REST().setToken(token);
 const gateway = new WebSocketManager({
 	token,
-	intents: GatewayIntentBits.Guilds,
+	intents: GatewayIntentBits.Guilds | GatewayIntentBits.GuildMessages | GatewayIntentBits.MessageContent,
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
@@ -30,7 +43,7 @@ createBot({
 	rest,
 	gateway,
 	commands: [ping],
-	events: [ready],
+	events: [ready, onMessage],
 });
 
 await publishCommands({ token, commands: [ping] });

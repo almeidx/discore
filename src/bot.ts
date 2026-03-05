@@ -26,7 +26,7 @@ export interface CreateBotOptions {
 	rest: REST;
 	gateway: WebSocketManager;
 	commands?: AnyCommandDefinition[];
-	events?: EventDefinition[];
+	events?: EventDefinition<any>[];
 	interactions?: InteractionDefinition[];
 	hooks?: GlobalHooks;
 	errorResponse?:
