@@ -4,13 +4,21 @@ import {
 	ApplicationCommandOptionType,
 	ChannelType,
 	ComponentType,
+	GatewayDispatchEvents,
 	GatewayIntentBits,
 	MessageFlags,
 	Routes,
 	TextInputStyle,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
-import { createBot, defineCommand, defineCommandGroup, publishCommands, CollectorTimeoutError } from "../src/index.ts";
+import {
+	createBot,
+	defineCommand,
+	defineCommandGroup,
+	defineEvent,
+	publishCommands,
+	CollectorTimeoutError,
+} from "../src/index.ts";
 
 const token = process.env.DISCORD_TOKEN!;
 
@@ -36,6 +44,7 @@ const toggleSetting = defineCommand({
 	handler: async (ctx) => {
 		const setting = ctx.options.setting;
 		const enabled = !getSettingState(setting);
+		console.log(`[/config toggle] ${setting} -> ${enabled ? "enabled" : "disabled"}`);
 
 		await ctx.reply({
 			content: `**${setting}** is now **${enabled ? "enabled" : "disabled"}**.`,
@@ -64,6 +73,7 @@ const channels = defineCommand({
 	},
 	handler: async (ctx) => {
 		const feature = ctx.options.feature;
+		console.log(`[/config channels] configuring channels for ${feature}`);
 		const customId = `config:channels:${feature}:${ctx.interaction.id}`;
 
 		await ctx.reply({
@@ -124,6 +134,7 @@ const customMessage = defineCommand({
 	},
 	handler: async (ctx) => {
 		const feature = ctx.options.feature;
+		console.log(`[/config message] opening modal for ${feature}`);
 		const modalCustomId = `config:message:${feature}:${ctx.interaction.id}`;
 
 		await ctx.showModal({
@@ -202,6 +213,13 @@ const config = defineCommandGroup({
 	subcommands: [toggleSetting, channels, customMessage],
 });
 
+const ready = defineEvent({
+	event: GatewayDispatchEvents.Ready,
+	handler: async (ctx) => {
+		console.log(`Logged in as ${ctx.event.user.username} (shard ${ctx.shardId})`);
+	},
+});
+
 function getSettingState(_setting: string): boolean {
 	return false;
 }
@@ -217,6 +235,7 @@ createBot({
 	rest,
 	gateway,
 	commands: [config],
+	events: [ready],
 	hooks: {
 		beforeCommand(ctx) {
 			console.log(`Executing command: ${ctx.interaction.data.name}`);
@@ -224,7 +243,8 @@ createBot({
 	},
 });
 
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [config] });
-await gateway.connect();
 
-console.log("Bot is now connected and ready.");
+console.log("Connecting to gateway...");
+await gateway.connect();

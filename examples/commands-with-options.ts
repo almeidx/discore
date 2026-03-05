@@ -2,13 +2,21 @@ import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import {
 	ApplicationCommandOptionType,
+	GatewayDispatchEvents,
 	GatewayIntentBits,
 	Routes,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
-import { createBot, defineCommand, publishCommands } from "../src/index.ts";
+import { createBot, defineCommand, defineEvent, publishCommands } from "../src/index.ts";
 
 const token = process.env.DISCORD_TOKEN!;
+
+const ready = defineEvent({
+	event: GatewayDispatchEvents.Ready,
+	handler: async (ctx) => {
+		console.log(`Logged in as ${ctx.event.user.username} (shard ${ctx.shardId})`);
+	},
+});
 
 const ban = defineCommand({
 	data: {
@@ -20,10 +28,9 @@ const ban = defineCommand({
 		],
 	},
 	handler: async (ctx) => {
-		// ctx.options.user is typed as string (Snowflake), guaranteed present
-		// ctx.options.reason is typed as string | undefined
 		const userId = ctx.options.user;
 		const reason = ctx.options.reason ?? "No reason provided";
+		console.log(`[/ban] banning user ${userId} — reason: ${reason}`);
 
 		await ctx.reply({ content: `Banned <@${userId}> for: ${reason}` });
 	},
@@ -39,6 +46,7 @@ const userinfo = defineCommand({
 		],
 	},
 	handler: async (ctx) => {
+		console.log(`[/userinfo] looking up user ${ctx.options.target}`);
 		const isEphemeral = ctx.options.ephemeral ?? false;
 
 		if (isEphemeral) {
@@ -58,6 +66,10 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({ rest, gateway, commands: [ban, userinfo] });
+createBot({ rest, gateway, commands: [ban, userinfo], events: [ready] });
+
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [ban, userinfo] });
+
+console.log("Connecting to gateway...");
 await gateway.connect();

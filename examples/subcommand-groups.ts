@@ -29,6 +29,7 @@ const addRole = defineCommand({
 		] as const,
 	},
 	handler: async (ctx) => {
+		console.log(`[/mod role add] member=${ctx.options.member} role=${ctx.options.role}`);
 		await ctx.reply({
 			content: `Added <@&${ctx.options.role}> to <@${ctx.options.member}>.`,
 			flags: MessageFlags.Ephemeral,
@@ -46,6 +47,7 @@ const removeRole = defineCommand({
 		] as const,
 	},
 	handler: async (ctx) => {
+		console.log(`[/mod role remove] member=${ctx.options.member} role=${ctx.options.role}`);
 		await ctx.reply({
 			content: `Removed <@&${ctx.options.role}> from <@${ctx.options.member}>.`,
 			flags: MessageFlags.Ephemeral,
@@ -70,6 +72,7 @@ const warn = defineCommand({
 	},
 	handler: async (ctx) => {
 		const reason = ctx.options.reason ?? "No reason provided";
+		console.log(`[/mod warn] member=${ctx.options.member} reason=${reason}`);
 		await ctx.reply({ content: `Warned <@${ctx.options.member}>: ${reason}` });
 	},
 });
@@ -100,7 +103,8 @@ createBot({
 	events: [ready],
 });
 
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [mod] });
-await gateway.connect();
 
-console.log("Subcommand group bot started");
+console.log("Connecting to gateway...");
+await gateway.connect();

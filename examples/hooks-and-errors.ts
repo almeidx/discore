@@ -1,7 +1,13 @@
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
-import { GatewayIntentBits, MessageFlags, Routes, type RESTGetAPIGatewayBotResult } from "discord-api-types/v10";
-import { createBot, defineCommand, publishCommands } from "../src/index.ts";
+import {
+	GatewayDispatchEvents,
+	GatewayIntentBits,
+	MessageFlags,
+	Routes,
+	type RESTGetAPIGatewayBotResult,
+} from "discord-api-types/v10";
+import { createBot, defineCommand, defineEvent, publishCommands } from "../src/index.ts";
 
 const token = process.env.DISCORD_TOKEN!;
 
@@ -20,6 +26,13 @@ const riskyCommand = defineCommand({
 	},
 });
 
+const ready = defineEvent({
+	event: GatewayDispatchEvents.Ready,
+	handler: async (ctx) => {
+		console.log(`Logged in as ${ctx.event.user.username} (shard ${ctx.shardId})`);
+	},
+});
+
 const rest = new REST().setToken(token);
 const gateway = new WebSocketManager({
 	token,
@@ -31,6 +44,7 @@ createBot({
 	rest,
 	gateway,
 	commands: [riskyCommand],
+	events: [ready],
 	hooks: {
 		beforeCommand: async () => {
 			console.log("[global] before — skipped for commands with their own hooks");
@@ -45,5 +59,8 @@ createBot({
 	errorResponse: { content: "Something went wrong!", flags: MessageFlags.Ephemeral },
 });
 
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [riskyCommand] });
+
+console.log("Connecting to gateway...");
 await gateway.connect();

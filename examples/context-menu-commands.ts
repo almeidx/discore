@@ -14,6 +14,7 @@ const token = process.env.DISCORD_TOKEN!;
 const userInfo = defineUserCommand({
 	data: { name: "User Info" },
 	handler: async (ctx) => {
+		console.log(`[User Info] target: ${ctx.targetUser.username}`);
 		const user = ctx.targetUser;
 		const member = ctx.targetMember;
 
@@ -30,6 +31,7 @@ const userInfo = defineUserCommand({
 const bookmark = defineMessageCommand({
 	data: { name: "Bookmark" },
 	handler: async (ctx) => {
+		console.log(`[Bookmark] message ${ctx.targetMessage.id} by ${ctx.targetMessage.author.username}`);
 		const msg = ctx.targetMessage;
 		const link = `https://discord.com/channels/${ctx.interaction.guild_id}/${msg.channel_id}/${msg.id}`;
 
@@ -61,7 +63,8 @@ createBot({
 	events: [ready],
 });
 
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [userInfo, bookmark] });
-await gateway.connect();
 
-console.log("Context menu bot started");
+console.log("Connecting to gateway...");
+await gateway.connect();

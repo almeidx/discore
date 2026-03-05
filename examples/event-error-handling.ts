@@ -13,6 +13,7 @@ const token = process.env.DISCORD_TOKEN!;
 const ping = defineCommand({
 	data: { name: "ping", description: "Check bot latency" },
 	handler: async (ctx) => {
+		console.log(`[/ping] used by ${ctx.interaction.member?.user.username ?? ctx.interaction.user?.username}`);
 		await ctx.reply({ content: "Pong!" });
 	},
 });
@@ -58,7 +59,8 @@ createBot({
 	},
 });
 
+console.log("Publishing commands...");
 await publishCommands({ token, commands: [ping] });
-await gateway.connect();
 
-console.log("Event error handling bot started");
+console.log("Connecting to gateway...");
+await gateway.connect();
