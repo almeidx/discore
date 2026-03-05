@@ -4,6 +4,8 @@ import {
 	ComponentType,
 	ApplicationCommandOptionType,
 	type APIChatInputApplicationCommandInteraction,
+	type APIUserApplicationCommandInteraction,
+	type APIMessageApplicationCommandInteraction,
 	type APIMessageComponentInteraction,
 	type APIModalSubmitInteraction,
 	type APIApplicationCommandAutocompleteInteraction,
@@ -155,4 +157,95 @@ export function autocompleteInteraction(
 			] as any,
 		},
 	} as unknown as APIApplicationCommandAutocompleteInteraction;
+}
+
+export function userCommandInteraction(name: string, targetUserId: string): APIUserApplicationCommandInteraction {
+	return {
+		...BASE,
+		type: InteractionType.ApplicationCommand,
+		data: {
+			id: "444444444444444444",
+			name,
+			type: ApplicationCommandType.User,
+			target_id: targetUserId,
+			resolved: {
+				users: {
+					[targetUserId]: {
+						id: targetUserId,
+						username: "targetuser",
+						discriminator: "0",
+						avatar: null,
+						global_name: "Target User",
+					},
+				},
+			},
+		},
+	} as unknown as APIUserApplicationCommandInteraction;
+}
+
+export function messageCommandInteraction(
+	name: string,
+	targetMessageId: string,
+): APIMessageApplicationCommandInteraction {
+	return {
+		...BASE,
+		type: InteractionType.ApplicationCommand,
+		data: {
+			id: "444444444444444444",
+			name,
+			type: ApplicationCommandType.Message,
+			target_id: targetMessageId,
+			resolved: {
+				messages: {
+					[targetMessageId]: {
+						id: targetMessageId,
+						channel_id: "333333333333333333",
+						author: { id: "666666666666666666", username: "test", discriminator: "0", avatar: null, global_name: null },
+						content: "Hello world",
+						timestamp: "2024-01-01T00:00:00.000Z",
+						edited_timestamp: null,
+						tts: false,
+						mention_everyone: false,
+						mentions: [],
+						mention_roles: [],
+						attachments: [],
+						embeds: [],
+						pinned: false,
+						type: 0,
+					},
+				},
+			},
+		},
+	} as unknown as APIMessageApplicationCommandInteraction;
+}
+
+export function subcommandGroupInteraction(
+	groupName: string,
+	subGroupName: string,
+	subName: string,
+	options: Array<{ name: string; type: number; value: unknown }> = [],
+): APIChatInputApplicationCommandInteraction {
+	return {
+		...BASE,
+		type: InteractionType.ApplicationCommand,
+		data: {
+			id: "444444444444444444",
+			name: groupName,
+			type: ApplicationCommandType.ChatInput,
+			options: [
+				{
+					name: subGroupName,
+					type: ApplicationCommandOptionType.SubcommandGroup,
+					options: [
+						{
+							name: subName,
+							type: ApplicationCommandOptionType.Subcommand,
+							options,
+						},
+					],
+				},
+			] as any,
+			resolved: {},
+		},
+	} as unknown as APIChatInputApplicationCommandInteraction;
 }

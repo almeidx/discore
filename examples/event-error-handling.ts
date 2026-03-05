@@ -17,19 +17,27 @@ const ping = defineCommand({
 	},
 });
 
-const ready = defineEvent({
-	event: GatewayDispatchEvents.Ready,
-	handler: async () => {
-		console.log("Bot is online!");
-	},
-});
-
 const onMessage = defineEvent({
 	event: GatewayDispatchEvents.MessageCreate,
 	handler: async (ctx) => {
-		console.log(`${ctx.event.author.username}: ${ctx.event.content}`);
+		if (ctx.event.author.bot) return;
+
+		await processMessage(ctx.event.content);
 	},
 });
+
+const onReady = defineEvent({
+	event: GatewayDispatchEvents.Ready,
+	handler: async (ctx) => {
+		console.log(`Logged in as ${ctx.event.user.username} on shard ${ctx.shardId}`);
+	},
+});
+
+async function processMessage(content: string): Promise<void> {
+	if (content.includes("error")) {
+		throw new Error(`Failed to process message: ${content}`);
+	}
+}
 
 const rest = new REST().setToken(token);
 const gateway = new WebSocketManager({
@@ -42,10 +50,15 @@ createBot({
 	rest,
 	gateway,
 	commands: [ping],
-	events: [ready, onMessage],
+	events: [onReady, onMessage],
+	hooks: {
+		onEventError(ctx, error) {
+			console.error(`Event handler failed on shard ${ctx.shardId}:`, error);
+		},
+	},
 });
 
 await publishCommands({ token, commands: [ping] });
 await gateway.connect();
 
-console.log("Bot started");
+console.log("Event error handling bot started");

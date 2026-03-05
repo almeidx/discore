@@ -1,14 +1,15 @@
+import type { GatewayDispatchEvents } from "discord-api-types/v10";
 import type { EventContext } from "../types/contexts.ts";
 import { DefinitionType, type EventDefinition } from "../types/definitions.ts";
+import type { GatewayEventData } from "../types/events.ts";
 
-export interface DefineEventConfig<TEvent = unknown> {
-	event: string;
+export interface DefineEventConfig<E extends GatewayDispatchEvents> {
+	event: E;
 	priority?: number;
-	handler: (ctx: EventContext<TEvent>) => Promise<void>;
+	handler: (ctx: EventContext<GatewayEventData<E>>) => Promise<void>;
 }
 
-/** Defines a gateway event handler with optional priority ordering. Lower priority values execute first. */
-export function defineEvent<TEvent = unknown>(config: DefineEventConfig<TEvent>): EventDefinition<TEvent> {
+export function defineEvent<E extends GatewayDispatchEvents>(config: DefineEventConfig<E>): EventDefinition<E> {
 	return {
 		type: DefinitionType.Event,
 		event: config.event,

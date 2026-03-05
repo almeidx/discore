@@ -12,6 +12,8 @@ import {
 	type AnyCommandDefinition,
 	type CommandDefinition,
 	type CommandGroupDefinition,
+	type UserCommandDefinition,
+	type MessageCommandDefinition,
 	type EventDefinition,
 	type InteractionDefinition,
 	type ButtonDefinition,
@@ -50,12 +52,23 @@ export function createBot(options: CreateBotOptions): Bot {
 
 	const commandMap = new Map<string, CommandDefinition>();
 	const commandGroupMap = new Map<string, CommandGroupDefinition>();
+	const userCommandMap = new Map<string, UserCommandDefinition>();
+	const messageCommandMap = new Map<string, MessageCommandDefinition>();
 
 	for (const cmd of options.commands ?? []) {
-		if (cmd.type === DefinitionType.CommandGroup) {
-			commandGroupMap.set(cmd.data.name, cmd);
-		} else {
-			commandMap.set(cmd.data.name, cmd);
+		switch (cmd.type) {
+			case DefinitionType.CommandGroup:
+				commandGroupMap.set(cmd.data.name, cmd);
+				break;
+			case DefinitionType.UserCommand:
+				userCommandMap.set(cmd.data.name, cmd);
+				break;
+			case DefinitionType.MessageCommand:
+				messageCommandMap.set(cmd.data.name, cmd);
+				break;
+			default:
+				commandMap.set(cmd.data.name, cmd);
+				break;
 		}
 	}
 
@@ -84,10 +97,12 @@ export function createBot(options: CreateBotOptions): Bot {
 	const collectorStore = createCollectorStore();
 	const modalCollectorStore = createModalCollectorStore();
 	const componentRouter = createComponentRouter(buttons, selectMenus, modals);
-	const eventRouter = createEventRouter(options.events ?? []);
+	const eventRouter = createEventRouter(options.events ?? [], options.hooks ?? {});
 	const interactionRouter = createInteractionRouter({
 		commands: commandMap,
 		commandGroups: commandGroupMap,
+		userCommands: userCommandMap,
+		messageCommands: messageCommandMap,
 		autocompletes,
 		componentRouter,
 		collectorStore,

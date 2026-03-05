@@ -1,5 +1,6 @@
 export type { InferOptions, OptionTypeMap } from "./types/options.ts";
 export type { CommandHooks, GlobalHooks } from "./types/hooks.ts";
+export type { GatewayEventData } from "./types/events.ts";
 export type {
 	BaseContext,
 	InteractionContext,
@@ -9,6 +10,8 @@ export type {
 	SelectMenuContext,
 	ModalContext,
 	AutocompleteContext,
+	UserCommandContext,
+	MessageCommandContext,
 	AwaitComponentOptions,
 	AwaitModalOptions,
 	CollectComponentsOptions,
@@ -23,10 +26,14 @@ export {
 	type SelectMenuDefinition,
 	type ModalDefinition,
 	type AutocompleteDefinition,
+	type UserCommandDefinition,
+	type MessageCommandDefinition,
+	type SubcommandGroup,
 	type InteractionDefinition,
 	type AnyCommandDefinition,
 	type CommandData,
 	type CommandGroupData,
+	type ContextMenuCommandData,
 } from "./types/definitions.ts";
 export type { ComponentInteractionContext } from "./types/internal.ts";
 export type { ModalFields } from "./modal-fields.ts";
@@ -39,6 +46,8 @@ export { defineButton } from "./definitions/button.ts";
 export { defineSelectMenu } from "./definitions/select-menu.ts";
 export { defineModal } from "./definitions/modal.ts";
 export { defineAutocomplete } from "./definitions/autocomplete.ts";
+export { defineUserCommand } from "./definitions/user-command.ts";
+export { defineMessageCommand } from "./definitions/message-command.ts";
 
 export { createBot } from "./bot.ts";
 export type { CreateBotOptions, Bot } from "./bot.ts";

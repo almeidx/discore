@@ -1,4 +1,4 @@
-import type { CommandContext, InteractionContext } from "./contexts.ts";
+import type { CommandContext, EventContext, InteractionContext } from "./contexts.ts";
 
 /**
  * Per-command lifecycle hooks. When set on a command, these override global hooks entirely.
@@ -19,4 +19,5 @@ export interface GlobalHooks {
 	beforeCommand?: (ctx: CommandContext) => Promise<boolean | void> | boolean | void;
 	afterCommand?: (ctx: CommandContext) => Promise<void> | void;
 	onError?: (ctx: InteractionContext, error: unknown) => Promise<boolean | void> | boolean | void;
+	onEventError?: (ctx: EventContext, error: unknown) => Promise<void> | void;
 }

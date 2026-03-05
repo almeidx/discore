@@ -8,11 +8,16 @@ import type {
 import type { WebSocketManager } from "@discordjs/ws";
 import type {
 	APIChatInputApplicationCommandInteraction,
+	APIUserApplicationCommandInteraction,
+	APIMessageApplicationCommandInteraction,
 	APIMessageComponentInteraction,
 	APIModalSubmitInteraction,
 	APIApplicationCommandAutocompleteInteraction,
 	APIInteraction,
 	APIApplicationCommandOptionChoice,
+	APIUser,
+	APIInteractionDataResolvedGuildMember,
+	APIMessage,
 } from "discord-api-types/v10";
 import type { ModalFields } from "../modal-fields.ts";
 import type { ComponentInteractionContext } from "./internal.ts";
@@ -93,6 +98,17 @@ export interface ModalContext extends InteractionContext {
 	customId: string;
 	params: Record<string, string>;
 	fields: ModalFields;
+}
+
+export interface UserCommandContext extends InteractionContext {
+	interaction: APIUserApplicationCommandInteraction;
+	targetUser: APIUser;
+	targetMember: APIInteractionDataResolvedGuildMember | undefined;
+}
+
+export interface MessageCommandContext extends InteractionContext {
+	interaction: APIMessageApplicationCommandInteraction;
+	targetMessage: APIMessage;
 }
 
 /** Context passed to autocomplete handlers. */

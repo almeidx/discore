@@ -1,6 +1,8 @@
 import type {
 	APIApplicationCommandBasicOption,
+	GatewayDispatchEvents,
 	RESTPostAPIChatInputApplicationCommandsJSONBody,
+	RESTPostAPIContextMenuApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
 import type {
 	CommandContext,
@@ -9,7 +11,10 @@ import type {
 	SelectMenuContext,
 	ModalContext,
 	AutocompleteContext,
+	UserCommandContext,
+	MessageCommandContext,
 } from "./contexts.ts";
+import type { GatewayEventData } from "./events.ts";
 import type { CommandHooks } from "./hooks.ts";
 import type { InferOptions } from "./options.ts";
 
@@ -21,6 +26,8 @@ export const DefinitionType = {
 	SelectMenu: 5,
 	Modal: 6,
 	Autocomplete: 7,
+	UserCommand: 8,
+	MessageCommand: 9,
 } as const;
 
 export type DefinitionType = (typeof DefinitionType)[keyof typeof DefinitionType];
@@ -43,14 +50,14 @@ export interface CommandDefinition<
 export interface CommandGroupDefinition {
 	type: typeof DefinitionType.CommandGroup;
 	data: CommandGroupData;
-	subcommands: CommandDefinition[];
+	subcommands: (CommandDefinition | SubcommandGroup)[];
 }
 
-export interface EventDefinition<TEvent = unknown> {
+export interface EventDefinition<E extends GatewayDispatchEvents = GatewayDispatchEvents> {
 	type: typeof DefinitionType.Event;
-	event: string;
+	event: E;
 	priority: number;
-	handler: (ctx: EventContext<TEvent>) => Promise<void>;
+	handler: (ctx: EventContext<GatewayEventData<E>>) => Promise<void>;
 }
 
 export interface ButtonDefinition {
@@ -78,6 +85,32 @@ export interface AutocompleteDefinition {
 	handler: (ctx: AutocompleteContext) => Promise<void>;
 }
 
+export type ContextMenuCommandData = Omit<RESTPostAPIContextMenuApplicationCommandsJSONBody, "type">;
+
+export interface UserCommandDefinition {
+	type: typeof DefinitionType.UserCommand;
+	data: ContextMenuCommandData;
+	hooks?: CommandHooks;
+	handler: (ctx: UserCommandContext) => Promise<void>;
+}
+
+export interface MessageCommandDefinition {
+	type: typeof DefinitionType.MessageCommand;
+	data: ContextMenuCommandData;
+	hooks?: CommandHooks;
+	handler: (ctx: MessageCommandContext) => Promise<void>;
+}
+
+export interface SubcommandGroup {
+	name: string;
+	description: string;
+	subcommands: CommandDefinition[];
+}
+
 export type InteractionDefinition = ButtonDefinition | SelectMenuDefinition | ModalDefinition | AutocompleteDefinition;
 
-export type AnyCommandDefinition = CommandDefinition | CommandGroupDefinition;
+export type AnyCommandDefinition =
+	| CommandDefinition
+	| CommandGroupDefinition
+	| UserCommandDefinition
+	| MessageCommandDefinition;

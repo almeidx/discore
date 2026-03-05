@@ -6,20 +6,32 @@ import {
 	ApplicationCommandType,
 	type APIInteraction,
 	type APIChatInputApplicationCommandInteraction,
+	type APIUserApplicationCommandInteraction,
+	type APIMessageApplicationCommandInteraction,
 	type APIMessageComponentInteraction,
 	type APIModalSubmitInteraction,
 	type APIApplicationCommandAutocompleteInteraction,
 	MessageFlags,
+	ComponentType,
 } from "discord-api-types/v10";
-import { ComponentType } from "discord-api-types/v10";
 import type { CollectorStore } from "../collectors/collector-store.ts";
 import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
 import { createAutocompleteContext } from "../context/autocomplete.ts";
 import { createButtonContext } from "../context/button.ts";
 import { createCommandContext } from "../context/command.ts";
+import { createMessageCommandContext } from "../context/message-command.ts";
 import { createModalContext } from "../context/modal.ts";
 import { createSelectMenuContext } from "../context/select-menu.ts";
-import type { CommandDefinition, CommandGroupDefinition, AutocompleteDefinition } from "../types/definitions.ts";
+import { createUserCommandContext } from "../context/user-command.ts";
+import { parseOptions } from "../options-parser.ts";
+import type {
+	CommandDefinition,
+	CommandGroupDefinition,
+	AutocompleteDefinition,
+	UserCommandDefinition,
+	MessageCommandDefinition,
+	SubcommandGroup,
+} from "../types/definitions.ts";
 import type { GlobalHooks } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { ComponentRouter } from "./component-router.ts";
@@ -37,6 +49,8 @@ export interface InteractionRouter {
 export function createInteractionRouter(config: {
 	commands: Map<string, CommandDefinition>;
 	commandGroups: Map<string, CommandGroupDefinition>;
+	userCommands: Map<string, UserCommandDefinition>;
+	messageCommands: Map<string, MessageCommandDefinition>;
 	autocompletes: AutocompleteDefinition[];
 	componentRouter: ComponentRouter;
 	collectorStore: CollectorStore;
@@ -47,6 +61,8 @@ export function createInteractionRouter(config: {
 	const {
 		commands,
 		commandGroups,
+		userCommands,
+		messageCommands,
 		autocompletes,
 		componentRouter,
 		collectorStore,
@@ -88,9 +104,14 @@ export function createInteractionRouter(config: {
 
 		const group = commandGroups.get(commandName);
 		if (group) {
-			const subName = interaction.data.options?.[0];
-			if (subName && "options" in subName) {
-				def = group.subcommands.find((s) => s.data.name === subName.name);
+			const parsed = parseOptions(interaction);
+			if (parsed.subcommandGroup) {
+				const subGroup = group.subcommands.find(
+					(s): s is SubcommandGroup => !("type" in s) && s.name === parsed.subcommandGroup,
+				);
+				def = subGroup?.subcommands.find((s) => s.data.name === parsed.subcommand);
+			} else if (parsed.subcommand) {
+				def = group.subcommands.find((s): s is CommandDefinition => "type" in s && s.data.name === parsed.subcommand);
 			}
 		} else {
 			def = commands.get(commandName);
@@ -126,6 +147,92 @@ export function createInteractionRouter(config: {
 			if (activeHooks.afterCommand) {
 				try {
 					await activeHooks.afterCommand(ctx);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+		}
+	}
+
+	async function handleUserCommand(
+		api: API,
+		gateway: WebSocketManager,
+		interaction: APIUserApplicationCommandInteraction,
+	): Promise<void> {
+		const def = userCommands.get(interaction.data.name);
+		if (!def) return;
+
+		const ctx = createUserCommandContext(api, gateway, interaction);
+
+		const activeHooks = {
+			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
+			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
+			onError: def.hooks?.onError ?? hooks.onError,
+		};
+
+		try {
+			if (activeHooks.beforeCommand) {
+				const result = await activeHooks.beforeCommand(ctx as never);
+				if (result === false) return;
+			}
+
+			await def.handler(ctx);
+		} catch (error) {
+			let suppressed = false;
+			if (activeHooks.onError) {
+				const result = await activeHooks.onError(ctx as never, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed) {
+				await sendErrorResponse(api, interaction, error);
+			}
+		} finally {
+			if (activeHooks.afterCommand) {
+				try {
+					await activeHooks.afterCommand(ctx as never);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+		}
+	}
+
+	async function handleMessageCommand(
+		api: API,
+		gateway: WebSocketManager,
+		interaction: APIMessageApplicationCommandInteraction,
+	): Promise<void> {
+		const def = messageCommands.get(interaction.data.name);
+		if (!def) return;
+
+		const ctx = createMessageCommandContext(api, gateway, interaction);
+
+		const activeHooks = {
+			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
+			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
+			onError: def.hooks?.onError ?? hooks.onError,
+		};
+
+		try {
+			if (activeHooks.beforeCommand) {
+				const result = await activeHooks.beforeCommand(ctx as never);
+				if (result === false) return;
+			}
+
+			await def.handler(ctx);
+		} catch (error) {
+			let suppressed = false;
+			if (activeHooks.onError) {
+				const result = await activeHooks.onError(ctx as never, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed) {
+				await sendErrorResponse(api, interaction, error);
+			}
+		} finally {
+			if (activeHooks.afterCommand) {
+				try {
+					await activeHooks.afterCommand(ctx as never);
 				} catch {
 					// afterCommand errors are swallowed
 				}
@@ -180,9 +287,12 @@ export function createInteractionRouter(config: {
 		async handle(api, gateway, interaction) {
 			switch (interaction.type) {
 				case InteractionType.ApplicationCommand: {
-					const cmdInteraction = interaction as APIChatInputApplicationCommandInteraction;
-					if (cmdInteraction.data.type === ApplicationCommandType.ChatInput) {
-						await handleCommand(api, gateway, cmdInteraction);
+					if (interaction.data.type === ApplicationCommandType.ChatInput) {
+						await handleCommand(api, gateway, interaction as APIChatInputApplicationCommandInteraction);
+					} else if (interaction.data.type === ApplicationCommandType.User) {
+						await handleUserCommand(api, gateway, interaction as APIUserApplicationCommandInteraction);
+					} else if (interaction.data.type === ApplicationCommandType.Message) {
+						await handleMessageCommand(api, gateway, interaction as APIMessageApplicationCommandInteraction);
 					}
 					break;
 				}

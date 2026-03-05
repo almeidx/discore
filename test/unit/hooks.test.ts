@@ -13,6 +13,8 @@ describe("hooks", () => {
 		return createInteractionRouter({
 			commands: new Map([["test", cmd]]),
 			commandGroups: new Map(),
+			userCommands: new Map(),
+			messageCommands: new Map(),
 			autocompletes: [],
 			componentRouter: createComponentRouter([], [], []),
 			collectorStore: createCollectorStore(),

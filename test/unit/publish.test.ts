@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { defineCommandGroup } from "../../src/definitions/command-group.ts";
 import { defineCommand } from "../../src/definitions/command.ts";
+import { defineMessageCommand } from "../../src/definitions/message-command.ts";
+import { defineUserCommand } from "../../src/definitions/user-command.ts";
+import type { CommandDefinition, SubcommandGroup } from "../../src/types/definitions.ts";
 
 describe("publishCommands", () => {
 	it("command definitions produce correct meta", () => {
@@ -35,8 +38,64 @@ describe("publishCommands", () => {
 
 		assert.strictEqual(group.data.name, "mod");
 		assert.strictEqual(group.subcommands.length, 1);
-		assert.strictEqual(group.subcommands[0]?.data.name, "ban");
-		assert.strictEqual(group.subcommands[0]?.data.options[0]?.name, "user");
-		assert.strictEqual(group.subcommands[0]?.data.options[0]?.type, ApplicationCommandOptionType.User);
+
+		const first = group.subcommands[0] as CommandDefinition;
+		assert.strictEqual(first.data.name, "ban");
+		assert.strictEqual(first.data.options[0]?.name, "user");
+		assert.strictEqual(first.data.options[0]?.type, ApplicationCommandOptionType.User);
+	});
+
+	it("user command definition produces correct meta", () => {
+		const cmd = defineUserCommand({
+			data: { name: "User Info" },
+			handler: async () => {},
+		});
+
+		assert.strictEqual(cmd.data.name, "User Info");
+	});
+
+	it("message command definition produces correct meta", () => {
+		const cmd = defineMessageCommand({
+			data: { name: "Bookmark" },
+			handler: async () => {},
+		});
+
+		assert.strictEqual(cmd.data.name, "Bookmark");
+	});
+
+	it("command group with subcommand groups produces correct structure", () => {
+		const add = defineCommand({
+			data: { name: "add", description: "Add a role" },
+			handler: async () => {},
+		});
+
+		const remove = defineCommand({
+			data: { name: "remove", description: "Remove a role" },
+			handler: async () => {},
+		});
+
+		const roleGroup: SubcommandGroup = {
+			name: "role",
+			description: "Role management",
+			subcommands: [add, remove],
+		};
+
+		const kick = defineCommand({
+			data: { name: "kick", description: "Kick a user" },
+			handler: async () => {},
+		});
+
+		const group = defineCommandGroup({
+			data: { name: "manage", description: "Management" },
+			subcommands: [kick, roleGroup],
+		});
+
+		assert.strictEqual(group.subcommands.length, 2);
+		assert.ok("type" in group.subcommands[0]!);
+		assert.ok(!("type" in group.subcommands[1]!));
+
+		const sg = group.subcommands[1] as SubcommandGroup;
+		assert.strictEqual(sg.name, "role");
+		assert.strictEqual(sg.subcommands.length, 2);
 	});
 });
