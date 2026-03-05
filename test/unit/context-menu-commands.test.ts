@@ -31,7 +31,7 @@ describe("context menu commands", () => {
 			userCommands,
 			messageCommands,
 			autocompletes: [],
-			componentRouter: createComponentRouter([], [], []),
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
 			collectorStore: createCollectorStore(),
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: {},

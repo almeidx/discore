@@ -16,7 +16,7 @@ describe("hooks", () => {
 			userCommands: new Map(),
 			messageCommands: new Map(),
 			autocompletes: [],
-			componentRouter: createComponentRouter([], [], []),
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
 			collectorStore: createCollectorStore(),
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: globalHooks,

@@ -96,7 +96,13 @@ export function createBot(options: CreateBotOptions): Bot {
 
 	const collectorStore = createCollectorStore();
 	const modalCollectorStore = createModalCollectorStore();
-	const componentRouter = createComponentRouter(buttons, selectMenus, modals);
+	const componentRouter = createComponentRouter(
+		buttons,
+		selectMenus,
+		modals,
+		options.hooks ?? {},
+		options.errorResponse,
+	);
 	const eventRouter = createEventRouter(options.events ?? [], options.hooks ?? {});
 	const interactionRouter = createInteractionRouter({
 		commands: commandMap,

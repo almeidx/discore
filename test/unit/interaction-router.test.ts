@@ -13,7 +13,7 @@ describe("createInteractionRouter", () => {
 		const api = createMockAPI();
 		const gateway = {} as any;
 		const collectorStore = createCollectorStore();
-		const componentRouter = createComponentRouter([], [], []);
+		const componentRouter = createComponentRouter([], [], [], {}, undefined);
 
 		const commandMap = new Map<string, CommandDefinition>();
 		for (const cmd of commands) {
@@ -110,7 +110,7 @@ describe("createInteractionRouter", () => {
 			userCommands: new Map(),
 			messageCommands: new Map(),
 			autocompletes: [],
-			componentRouter: createComponentRouter([], [], []),
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
 			collectorStore: createCollectorStore(),
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: {},
@@ -142,7 +142,7 @@ describe("createInteractionRouter", () => {
 			userCommands: new Map(),
 			messageCommands: new Map(),
 			autocompletes: [],
-			componentRouter: createComponentRouter([], [], []),
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
 			collectorStore: createCollectorStore(),
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: {},
