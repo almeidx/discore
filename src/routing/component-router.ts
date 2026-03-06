@@ -7,7 +7,7 @@ import { createModalContext } from "../context/modal.ts";
 import { createSelectMenuContext } from "../context/select-menu.ts";
 import type { InteractionContext } from "../types/contexts.ts";
 import type { ButtonDefinition, SelectMenuDefinition, ModalDefinition } from "../types/definitions.ts";
-import type { GlobalHooks } from "../types/hooks.ts";
+import type { GlobalHooks, AnyInteractionContext } from "../types/hooks.ts";
 import type { ErrorResponseOption } from "./interaction-router.ts";
 
 export interface ComponentRouter {
@@ -64,6 +64,21 @@ export function createComponentRouter(
 		}
 	}
 
+	async function runBeforeInteraction(ctx: AnyInteractionContext): Promise<boolean> {
+		if (!hooks.beforeInteraction) return true;
+		const result = await hooks.beforeInteraction(ctx);
+		return result !== false;
+	}
+
+	async function runAfterInteraction(ctx: AnyInteractionContext): Promise<void> {
+		if (!hooks.afterInteraction) return;
+		try {
+			await hooks.afterInteraction(ctx);
+		} catch {
+			// afterInteraction errors are swallowed
+		}
+	}
+
 	return {
 		async handleComponent(api, gateway, interaction) {
 			const customId = interaction.data.custom_id;
@@ -75,7 +90,10 @@ export function createComponentRouter(
 					if (match) {
 						const params = match.groups ?? {};
 						const ctx = createButtonContext(api, gateway, interaction, params);
+						if (!(await runBeforeInteraction(ctx))) return;
 						await runHandler(api, interaction, ctx, () => def.handler(ctx));
+						await runAfterInteraction(ctx);
+						return;
 					}
 				}
 			} else {
@@ -84,7 +102,10 @@ export function createComponentRouter(
 					if (match) {
 						const params = match.groups ?? {};
 						const ctx = createSelectMenuContext(api, gateway, interaction, params);
+						if (!(await runBeforeInteraction(ctx))) return;
 						await runHandler(api, interaction, ctx, () => def.handler(ctx));
+						await runAfterInteraction(ctx);
+						return;
 					}
 				}
 			}
@@ -98,7 +119,10 @@ export function createComponentRouter(
 				if (match) {
 					const params = match.groups ?? {};
 					const ctx = createModalContext(api, gateway, interaction, params);
+					if (!(await runBeforeInteraction(ctx))) return;
 					await runHandler(api, interaction, ctx, () => def.handler(ctx));
+					await runAfterInteraction(ctx);
+					return;
 				}
 			}
 		},

@@ -32,7 +32,7 @@ import type {
 	MessageCommandDefinition,
 	SubcommandGroup,
 } from "../types/definitions.ts";
-import type { GlobalHooks } from "../types/hooks.ts";
+import type { GlobalHooks, AnyInteractionContext } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { ComponentRouter } from "./component-router.ts";
 
@@ -93,6 +93,21 @@ export function createInteractionRouter(config: {
 		}
 	}
 
+	async function runBeforeInteraction(ctx: AnyInteractionContext): Promise<boolean> {
+		if (!hooks.beforeInteraction) return true;
+		const result = await hooks.beforeInteraction(ctx);
+		return result !== false;
+	}
+
+	async function runAfterInteraction(ctx: AnyInteractionContext): Promise<void> {
+		if (!hooks.afterInteraction) return;
+		try {
+			await hooks.afterInteraction(ctx);
+		} catch {
+			// afterInteraction errors are swallowed
+		}
+	}
+
 	async function handleCommand(
 		api: API,
 		gateway: WebSocketManager,
@@ -120,6 +135,8 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+
+		if (!(await runBeforeInteraction(ctx))) return;
 
 		const activeHooks = {
 			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
@@ -151,6 +168,7 @@ export function createInteractionRouter(config: {
 					// afterCommand errors are swallowed
 				}
 			}
+			await runAfterInteraction(ctx);
 		}
 	}
 
@@ -164,6 +182,8 @@ export function createInteractionRouter(config: {
 
 		const ctx = createUserCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
 
+		if (!(await runBeforeInteraction(ctx))) return;
+
 		const activeHooks = {
 			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
 			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
@@ -194,6 +214,7 @@ export function createInteractionRouter(config: {
 					// afterCommand errors are swallowed
 				}
 			}
+			await runAfterInteraction(ctx);
 		}
 	}
 
@@ -207,6 +228,8 @@ export function createInteractionRouter(config: {
 
 		const ctx = createMessageCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
 
+		if (!(await runBeforeInteraction(ctx))) return;
+
 		const activeHooks = {
 			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
 			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
@@ -237,6 +260,7 @@ export function createInteractionRouter(config: {
 					// afterCommand errors are swallowed
 				}
 			}
+			await runAfterInteraction(ctx);
 		}
 	}
 
@@ -245,15 +269,19 @@ export function createInteractionRouter(config: {
 		gateway: WebSocketManager,
 		interaction: APIApplicationCommandAutocompleteInteraction,
 	): Promise<void> {
-		const commandName = interaction.data.name;
-
 		const ctx = createAutocompleteContext(api, gateway, interaction);
 
-		for (const def of autocompletes) {
-			if (def.command === commandName && def.option === ctx.focused.name) {
-				await def.handler(ctx);
-				return;
+		if (!(await runBeforeInteraction(ctx))) return;
+
+		try {
+			for (const def of autocompletes) {
+				if (matchesAutocomplete(def, ctx) && def.option === ctx.focused.name) {
+					await def.handler(ctx);
+					return;
+				}
 			}
+		} finally {
+			await runAfterInteraction(ctx);
 		}
 	}
 
@@ -323,4 +351,26 @@ export function createInteractionRouter(config: {
 			}
 		},
 	};
+}
+
+function matchesAutocomplete(
+	def: AutocompleteDefinition,
+	ctx: {
+		interaction: APIApplicationCommandAutocompleteInteraction;
+		subcommand: string | undefined;
+		subcommandGroup: string | undefined;
+	},
+): boolean {
+	const commandName = ctx.interaction.data.name;
+
+	if (typeof def.command === "string") {
+		return def.command === commandName;
+	}
+
+	const parts = def.command;
+	if (parts.length === 2) {
+		return parts[0] === commandName && parts[1] === ctx.subcommand;
+	}
+
+	return parts[0] === commandName && parts[1] === ctx.subcommandGroup && parts[2] === ctx.subcommand;
 }

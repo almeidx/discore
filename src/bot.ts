@@ -40,6 +40,11 @@ export interface CreateBotOptions {
 export interface Bot {
 	api: API;
 	gateway: WebSocketManager;
+	commands: Map<string, CommandDefinition>;
+	commandGroups: Map<string, CommandGroupDefinition>;
+	userCommands: Map<string, UserCommandDefinition>;
+	messageCommands: Map<string, MessageCommandDefinition>;
+	destroy(): void;
 }
 
 /**
@@ -117,14 +122,26 @@ export function createBot(options: CreateBotOptions): Bot {
 		errorResponse: options.errorResponse,
 	});
 
-	gateway.on(WebSocketShardEvents.Dispatch, async (payload: GatewayDispatchPayload, shardId: number) => {
+	const listener = async (payload: GatewayDispatchPayload, shardId: number) => {
 		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
 			const interaction = payload.d as APIInteraction;
 			await interactionRouter.handle(api, gateway, interaction);
 		}
 
 		await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);
-	});
+	};
 
-	return { api, gateway };
+	gateway.on(WebSocketShardEvents.Dispatch, listener);
+
+	return {
+		api,
+		gateway,
+		commands: commandMap,
+		commandGroups: commandGroupMap,
+		userCommands: userCommandMap,
+		messageCommands: messageCommandMap,
+		destroy() {
+			gateway.off(WebSocketShardEvents.Dispatch, listener);
+		},
+	};
 }

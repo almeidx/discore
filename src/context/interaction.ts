@@ -7,7 +7,7 @@ import type {
 	CreateModalResponseOptions,
 } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
-import type { APIInteraction } from "discord-api-types/v10";
+import type { APIInteraction, APIMessage } from "discord-api-types/v10";
 import type { InteractionContext } from "../types/contexts.ts";
 
 export function createInteractionContext(
@@ -46,12 +46,20 @@ export function createInteractionContext(
 			replied = true;
 		},
 
-		async followUp(data: CreateInteractionFollowUpResponseOptions): Promise<void> {
-			await api.interactions.followUp(interaction.application_id, interaction.token, data);
+		async followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage> {
+			return api.interactions.followUp(interaction.application_id, interaction.token, data);
 		},
 
-		async editReply(data: EditInteractionResponseOptions): Promise<void> {
-			await api.interactions.editReply(interaction.application_id, interaction.token, data);
+		async editReply(data: EditInteractionResponseOptions): Promise<APIMessage> {
+			return api.interactions.editReply(interaction.application_id, interaction.token, data);
+		},
+
+		async deleteReply(): Promise<void> {
+			await api.interactions.deleteReply(interaction.application_id, interaction.token);
+		},
+
+		async fetchReply(): Promise<APIMessage> {
+			return api.interactions.getOriginalReply(interaction.application_id, interaction.token);
 		},
 
 		async showModal(data: CreateModalResponseOptions): Promise<void> {

@@ -1,4 +1,23 @@
-import type { CommandContext, EventContext, InteractionContext } from "./contexts.ts";
+import type {
+	CommandContext,
+	EventContext,
+	InteractionContext,
+	ButtonContext,
+	SelectMenuContext,
+	ModalContext,
+	AutocompleteContext,
+	UserCommandContext,
+	MessageCommandContext,
+} from "./contexts.ts";
+
+export type AnyInteractionContext =
+	| CommandContext
+	| ButtonContext
+	| SelectMenuContext
+	| ModalContext
+	| UserCommandContext
+	| MessageCommandContext
+	| AutocompleteContext;
 
 /**
  * Per-command lifecycle hooks. When set on a command, these override global hooks entirely.
@@ -20,4 +39,8 @@ export interface GlobalHooks {
 	afterCommand?: (ctx: CommandContext) => Promise<void> | void;
 	onError?: (ctx: InteractionContext, error: unknown) => Promise<boolean | void> | boolean | void;
 	onEventError?: (ctx: EventContext, error: unknown) => Promise<void> | void;
+	/** Runs before any interaction handler (commands, components, modals, autocomplete). Return `false` to cancel. */
+	beforeInteraction?: (ctx: AnyInteractionContext) => Promise<boolean | void> | boolean | void;
+	/** Runs after any interaction handler completes. */
+	afterInteraction?: (ctx: AnyInteractionContext) => Promise<void> | void;
 }

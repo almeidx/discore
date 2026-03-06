@@ -35,7 +35,7 @@ describe("command flow integration", () => {
 	});
 
 	it("dispatches command with options", async () => {
-		let receivedUser: string | undefined;
+		let receivedUserId: string | undefined;
 
 		const ban = defineCommand({
 			data: {
@@ -44,7 +44,7 @@ describe("command flow integration", () => {
 				options: [{ name: "user", type: ApplicationCommandOptionType.User, description: "u", required: true }] as const,
 			},
 			handler: async (ctx) => {
-				receivedUser = ctx.options.user;
+				receivedUserId = ctx.options.user.user.id;
 			},
 		});
 
@@ -58,11 +58,16 @@ describe("command flow integration", () => {
 		const interaction = chatInputInteraction("ban", [
 			{ name: "user", type: ApplicationCommandOptionType.User, value: "999888777" },
 		]);
+		(interaction.data as any).resolved = {
+			users: {
+				"999888777": { id: "999888777", username: "testuser", discriminator: "0", avatar: null, global_name: null },
+			},
+		};
 		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, interaction);
 
 		await new Promise((r) => setTimeout(r, 50));
 
-		assert.strictEqual(receivedUser, "999888777");
+		assert.strictEqual(receivedUserId, "999888777");
 	});
 
 	it("hooks execute in correct order", async () => {

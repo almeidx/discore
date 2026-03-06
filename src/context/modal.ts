@@ -1,4 +1,4 @@
-import type { API } from "@discordjs/core";
+import type { API, CreateInteractionUpdateMessageResponseOptions } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIModalSubmitInteraction } from "discord-api-types/v10";
 import { createModalFields } from "../modal-fields.ts";
@@ -19,5 +19,13 @@ export function createModalContext(
 		customId: interaction.data.custom_id,
 		params,
 		fields: createModalFields(interaction),
+
+		async update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void> {
+			await api.interactions.updateMessage(interaction.id, interaction.token, data);
+		},
+
+		async deferUpdate(): Promise<void> {
+			await api.interactions.deferMessageUpdate(interaction.id, interaction.token);
+		},
 	};
 }

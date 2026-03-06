@@ -39,7 +39,7 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({
+const bot = createBot({
 	rest,
 	gateway,
 	commands: [ping],
@@ -47,7 +47,14 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [ping] });
+const published = await publishCommands({ token, commands: [ping] });
+console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");
 await gateway.connect();
+
+process.on("SIGINT", () => {
+	console.log("Shutting down...");
+	bot.destroy();
+	gateway.destroy();
+});

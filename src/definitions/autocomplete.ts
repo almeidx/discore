@@ -2,7 +2,13 @@ import type { AutocompleteContext } from "../types/contexts.ts";
 import { DefinitionType, type AutocompleteDefinition } from "../types/definitions.ts";
 
 export interface DefineAutocompleteConfig {
-	command: string;
+	/**
+	 * Command to match. Accepts:
+	 * - `"command"` — matches by command name (any subcommand)
+	 * - `["command", "subcommand"]` — matches command + subcommand
+	 * - `["command", "group", "subcommand"]` — matches command + subcommand group + subcommand
+	 */
+	command: string | [string, string] | [string, string, string];
 	option: string;
 	handler: (ctx: AutocompleteContext) => Promise<void>;
 }

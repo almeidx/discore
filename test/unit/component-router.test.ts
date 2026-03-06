@@ -73,7 +73,7 @@ describe("createComponentRouter", () => {
 		assert.strictEqual(ctx.fields.getRequired("desc"), "It broke");
 	});
 
-	it("broadcasts to all matching handlers", async () => {
+	it("stops after first matching handler", async () => {
 		const handler1 = mock.fn<(ctx: ButtonContext) => Promise<void>>(async () => {});
 		const handler2 = mock.fn<(ctx: ButtonContext) => Promise<void>>(async () => {});
 		const buttons: ButtonDefinition[] = [
@@ -85,7 +85,7 @@ describe("createComponentRouter", () => {
 		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
 
 		assert.strictEqual(handler1.mock.callCount(), 1);
-		assert.strictEqual(handler2.mock.callCount(), 1);
+		assert.strictEqual(handler2.mock.callCount(), 0);
 	});
 
 	it("calls onError hook when button handler throws", async () => {
@@ -126,7 +126,7 @@ describe("createComponentRouter", () => {
 		assert.strictEqual((api.interactions.reply as ReturnType<typeof mock.fn>).mock.callCount(), 1);
 	});
 
-	it("continues to next handler when one throws", async () => {
+	it("does not continue to next handler when first match throws", async () => {
 		const handler2 = mock.fn<(ctx: ButtonContext) => Promise<void>>(async () => {});
 		const buttons: ButtonDefinition[] = [
 			{
@@ -142,7 +142,7 @@ describe("createComponentRouter", () => {
 		const router = createComponentRouter(buttons, [], [], {}, null);
 		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("test"));
 
-		assert.strictEqual(handler2.mock.callCount(), 1);
+		assert.strictEqual(handler2.mock.callCount(), 0);
 	});
 
 	it("calls onError hook when modal handler throws", async () => {

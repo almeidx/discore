@@ -21,5 +21,9 @@ export function createButtonContext(
 		async update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void> {
 			await api.interactions.updateMessage(interaction.id, interaction.token, data);
 		},
+
+		async deferUpdate(): Promise<void> {
+			await api.interactions.deferMessageUpdate(interaction.id, interaction.token);
+		},
 	};
 }

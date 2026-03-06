@@ -29,11 +29,11 @@ const ban = defineCommand({
 		],
 	},
 	handler: async (ctx) => {
-		const userId = ctx.options.user;
+		const { user, member } = ctx.options.user;
 		const reason = ctx.options.reason ?? "No reason provided";
-		console.log(`[/ban] banning user ${userId} — reason: ${reason}`);
+		console.log(`[/ban] banning ${user.username} (${user.id}) — reason: ${reason}`);
 
-		await ctx.reply({ content: `Banned <@${userId}> for: ${reason}` });
+		await ctx.reply({ content: `Banned <@${user.id}> (${member?.nick ?? user.username}) for: ${reason}` });
 	},
 });
 
@@ -47,7 +47,8 @@ const userinfo = defineCommand({
 		],
 	},
 	handler: async (ctx) => {
-		console.log(`[/userinfo] looking up user ${ctx.options.target}`);
+		const { user, member } = ctx.options.target;
+		console.log(`[/userinfo] looking up ${user.username}`);
 		const isEphemeral = ctx.options.ephemeral ?? false;
 
 		if (isEphemeral) {
@@ -56,7 +57,12 @@ const userinfo = defineCommand({
 			await ctx.defer();
 		}
 
-		await ctx.editReply({ content: `User ID: ${ctx.options.target}` });
+		const lines = [`**${user.global_name ?? user.username}**`, `ID: ${user.id}`, `Bot: ${user.bot ? "Yes" : "No"}`];
+		if (member?.joined_at) {
+			lines.push(`Joined: <t:${Math.floor(new Date(member.joined_at).getTime() / 1_000)}:R>`);
+		}
+
+		await ctx.editReply({ content: lines.join("\n") });
 	},
 });
 
@@ -70,7 +76,8 @@ const gateway = new WebSocketManager({
 createBot({ rest, gateway, commands: [ban, userinfo], events: [ready] });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [ban, userinfo] });
+const published = await publishCommands({ token, commands: [ban, userinfo] });
+console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");
 await gateway.connect();

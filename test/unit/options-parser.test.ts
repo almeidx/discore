@@ -21,9 +21,17 @@ describe("parseOptions", () => {
 		const interaction = subcommandInteraction("mod", "ban", [
 			{ name: "user", type: ApplicationCommandOptionType.User, value: "999" },
 		]);
+		(interaction.data as any).resolved = {
+			users: { "999": { id: "999", username: "test", discriminator: "0", avatar: null, global_name: null } },
+		};
 
 		const result = parseOptions(interaction);
-		assert.deepStrictEqual(result.options, { user: "999" });
+		assert.deepStrictEqual(result.options, {
+			user: {
+				user: { id: "999", username: "test", discriminator: "0", avatar: null, global_name: null },
+				member: undefined,
+			},
+		});
 		assert.strictEqual(result.subcommand, "ban");
 	});
 

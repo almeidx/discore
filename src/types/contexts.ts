@@ -17,9 +17,9 @@ import type {
 	APIApplicationCommandAutocompleteInteraction,
 	APIInteraction,
 	APIApplicationCommandOptionChoice,
+	APIMessage,
 	APIUser,
 	APIInteractionDataResolvedGuildMember,
-	APIMessage,
 } from "discord-api-types/v10";
 import type { ModalFields } from "../modal-fields.ts";
 import type { ComponentInteractionContext } from "./internal.ts";
@@ -35,8 +35,10 @@ export interface InteractionContext extends BaseContext {
 	deferred: boolean;
 	reply(data: CreateInteractionResponseOptions): Promise<void>;
 	defer(data?: CreateInteractionDeferResponseOptions): Promise<void>;
-	followUp(data: CreateInteractionFollowUpResponseOptions): Promise<void>;
-	editReply(data: EditInteractionResponseOptions): Promise<void>;
+	followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage>;
+	editReply(data: EditInteractionResponseOptions): Promise<APIMessage>;
+	deleteReply(): Promise<void>;
+	fetchReply(): Promise<APIMessage>;
 	showModal(data: CreateModalResponseOptions): Promise<void>;
 }
 
@@ -85,6 +87,7 @@ export interface ButtonContext extends InteractionContext {
 	customId: string;
 	params: Record<string, string>;
 	update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void>;
+	deferUpdate(): Promise<void>;
 }
 
 /** Context passed to select menu interaction handlers. Selected values are in {@link values}. */
@@ -94,6 +97,7 @@ export interface SelectMenuContext extends InteractionContext {
 	params: Record<string, string>;
 	values: string[];
 	update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void>;
+	deferUpdate(): Promise<void>;
 }
 
 /** Context passed to modal submission handlers. Access submitted values via {@link fields}. */
@@ -102,6 +106,8 @@ export interface ModalContext extends InteractionContext {
 	customId: string;
 	params: Record<string, string>;
 	fields: ModalFields;
+	update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void>;
+	deferUpdate(): Promise<void>;
 }
 
 export interface UserCommandContext extends InteractionContext {
@@ -125,5 +131,8 @@ export interface MessageCommandContext extends InteractionContext {
 export interface AutocompleteContext extends BaseContext {
 	interaction: APIApplicationCommandAutocompleteInteraction;
 	focused: { name: string; value: string | number };
+	options: Record<string, unknown>;
+	subcommand: string | undefined;
+	subcommandGroup: string | undefined;
 	respond(choices: APIApplicationCommandOptionChoice[]): Promise<void>;
 }

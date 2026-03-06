@@ -1,7 +1,8 @@
 import { describe, it } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
-import type { Snowflake, APIAttachment } from "discord-api-types/v10";
+import type { APIAttachment, APIInteractionDataResolvedChannel, APIRole } from "discord-api-types/v10";
 import { defineCommand } from "../../src/definitions/command.ts";
+import type { ResolvedUser } from "../../src/types/options.ts";
 
 describe("options type inference", () => {
 	it("infers required string option", () => {
@@ -36,7 +37,7 @@ describe("options type inference", () => {
 		});
 	});
 
-	it("infers user option as Snowflake", () => {
+	it("infers user option as ResolvedUser", () => {
 		defineCommand({
 			data: {
 				name: "test",
@@ -44,9 +45,38 @@ describe("options type inference", () => {
 				options: [{ name: "user", type: ApplicationCommandOptionType.User, description: "u", required: true }] as const,
 			},
 			handler: async (ctx) => {
-				const _val: Snowflake = ctx.options.user;
-				// @ts-expect-error -- Snowflake is string, not number
+				const _val: ResolvedUser = ctx.options.user;
+				const _username: string = ctx.options.user.user.username;
+				// @ts-expect-error -- ResolvedUser is not a number
 				const _bad: number = ctx.options.user;
+			},
+		});
+	});
+
+	it("infers channel option as resolved channel", () => {
+		defineCommand({
+			data: {
+				name: "test",
+				description: "test",
+				options: [
+					{ name: "channel", type: ApplicationCommandOptionType.Channel, description: "c", required: true },
+				] as const,
+			},
+			handler: async (ctx) => {
+				const _val: APIInteractionDataResolvedChannel = ctx.options.channel;
+			},
+		});
+	});
+
+	it("infers role option as APIRole", () => {
+		defineCommand({
+			data: {
+				name: "test",
+				description: "test",
+				options: [{ name: "role", type: ApplicationCommandOptionType.Role, description: "r", required: true }] as const,
+			},
+			handler: async (ctx) => {
+				const _val: APIRole = ctx.options.role;
 			},
 		});
 	});
@@ -108,9 +138,24 @@ describe("options type inference", () => {
 				] as const,
 			},
 			handler: async (ctx) => {
-				const _user: Snowflake = ctx.options.user;
+				const _user: ResolvedUser = ctx.options.user;
 				const _reason: string | undefined = ctx.options.reason;
 				const _days: number | undefined = ctx.options.days;
+			},
+		});
+	});
+
+	it("infers mentionable option as ResolvedUser | APIRole", () => {
+		defineCommand({
+			data: {
+				name: "test",
+				description: "test",
+				options: [
+					{ name: "target", type: ApplicationCommandOptionType.Mentionable, description: "t", required: true },
+				] as const,
+			},
+			handler: async (ctx) => {
+				const _val: ResolvedUser | APIRole = ctx.options.target;
 			},
 		});
 	});

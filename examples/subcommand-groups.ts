@@ -29,9 +29,11 @@ const addRole = defineCommand({
 		] as const,
 	},
 	handler: async (ctx) => {
-		console.log(`[/mod role add] member=${ctx.options.member} role=${ctx.options.role}`);
+		const memberId = ctx.options.member.user.id;
+		const roleId = ctx.options.role.id;
+		console.log(`[/mod role add] member=${memberId} role=${ctx.options.role.name}`);
 		await ctx.reply({
-			content: `Added <@&${ctx.options.role}> to <@${ctx.options.member}>.`,
+			content: `Added <@&${roleId}> to <@${memberId}>.`,
 			flags: MessageFlags.Ephemeral,
 		});
 	},
@@ -47,9 +49,11 @@ const removeRole = defineCommand({
 		] as const,
 	},
 	handler: async (ctx) => {
-		console.log(`[/mod role remove] member=${ctx.options.member} role=${ctx.options.role}`);
+		const memberId = ctx.options.member.user.id;
+		const roleId = ctx.options.role.id;
+		console.log(`[/mod role remove] member=${memberId} role=${ctx.options.role.name}`);
 		await ctx.reply({
-			content: `Removed <@&${ctx.options.role}> from <@${ctx.options.member}>.`,
+			content: `Removed <@&${roleId}> from <@${memberId}>.`,
 			flags: MessageFlags.Ephemeral,
 		});
 	},
@@ -72,8 +76,9 @@ const warn = defineCommand({
 	},
 	handler: async (ctx) => {
 		const reason = ctx.options.reason ?? "No reason provided";
-		console.log(`[/mod warn] member=${ctx.options.member} reason=${reason}`);
-		await ctx.reply({ content: `Warned <@${ctx.options.member}>: ${reason}` });
+		const memberId = ctx.options.member.user.id;
+		console.log(`[/mod warn] member=${memberId} reason=${reason}`);
+		await ctx.reply({ content: `Warned <@${memberId}>: ${reason}` });
 	},
 });
 

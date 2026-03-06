@@ -3,6 +3,7 @@ import { REST } from "@discordjs/rest";
 import {
 	ApplicationCommandOptionType,
 	ApplicationCommandType,
+	type APIApplicationCommand,
 	type RESTPostAPIChatInputApplicationCommandsJSONBody,
 	type RESTPostAPIContextMenuApplicationCommandsJSONBody,
 	type APIApplicationCommandOption,
@@ -92,7 +93,7 @@ function toPayload(cmd: AnyCommandDefinition): CommandPayload {
 	}
 }
 
-export async function publishCommands(options: PublishCommandsOptions): Promise<void> {
+export async function publishCommands(options: PublishCommandsOptions): Promise<APIApplicationCommand[]> {
 	const rest = new REST().setToken(options.token);
 	const api = new API(rest);
 
@@ -102,8 +103,8 @@ export async function publishCommands(options: PublishCommandsOptions): Promise<
 	const applicationId = appInfo.id;
 
 	if (options.guildId) {
-		await api.applicationCommands.bulkOverwriteGuildCommands(applicationId, options.guildId, payloads);
-	} else {
-		await api.applicationCommands.bulkOverwriteGlobalCommands(applicationId, payloads);
+		return api.applicationCommands.bulkOverwriteGuildCommands(applicationId, options.guildId, payloads);
 	}
+
+	return api.applicationCommands.bulkOverwriteGlobalCommands(applicationId, payloads);
 }

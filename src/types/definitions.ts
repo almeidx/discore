@@ -80,7 +80,7 @@ export interface ModalDefinition {
 
 export interface AutocompleteDefinition {
 	type: typeof DefinitionType.Autocomplete;
-	command: string;
+	command: string | string[];
 	option: string;
 	handler: (ctx: AutocompleteContext) => Promise<void>;
 }

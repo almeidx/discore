@@ -31,15 +31,47 @@ export function parseOptions(interaction: APIChatInputApplicationCommandInteract
 		}
 	}
 
+	const resolved = data.resolved;
 	const options: Record<string, unknown> = {};
 
 	for (const opt of rawOptions) {
-		if (opt.type === ApplicationCommandOptionType.Attachment) {
-			const attachmentId = opt.value as string;
-			const resolved = data.resolved?.attachments?.[attachmentId];
-			options[opt.name] = resolved;
-		} else {
-			options[opt.name] = opt.value;
+		switch (opt.type) {
+			case ApplicationCommandOptionType.Attachment: {
+				const attachmentId = opt.value as string;
+				options[opt.name] = resolved?.attachments?.[attachmentId];
+				break;
+			}
+			case ApplicationCommandOptionType.User: {
+				const userId = opt.value as string;
+				options[opt.name] = {
+					user: resolved?.users?.[userId],
+					member: resolved?.members?.[userId],
+				};
+				break;
+			}
+			case ApplicationCommandOptionType.Channel: {
+				const channelId = opt.value as string;
+				options[opt.name] = resolved?.channels?.[channelId];
+				break;
+			}
+			case ApplicationCommandOptionType.Role: {
+				const roleId = opt.value as string;
+				options[opt.name] = resolved?.roles?.[roleId];
+				break;
+			}
+			case ApplicationCommandOptionType.Mentionable: {
+				const id = opt.value as string;
+				const user = resolved?.users?.[id];
+				if (user) {
+					options[opt.name] = { user, member: resolved?.members?.[id] };
+				} else {
+					options[opt.name] = resolved?.roles?.[id];
+				}
+				break;
+			}
+			default:
+				options[opt.name] = opt.value;
+				break;
 		}
 	}
 

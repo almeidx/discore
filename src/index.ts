@@ -1,5 +1,5 @@
-export type { InferOptions, OptionTypeMap } from "./types/options.ts";
-export type { CommandHooks, GlobalHooks } from "./types/hooks.ts";
+export type { InferOptions, OptionTypeMap, ResolvedUser } from "./types/options.ts";
+export type { CommandHooks, GlobalHooks, AnyInteractionContext } from "./types/hooks.ts";
 export type { GatewayEventData } from "./types/events.ts";
 export type {
 	BaseContext,
@@ -46,6 +46,7 @@ export { defineButton } from "./definitions/button.ts";
 export { defineSelectMenu } from "./definitions/select-menu.ts";
 export { defineModal } from "./definitions/modal.ts";
 export { defineAutocomplete } from "./definitions/autocomplete.ts";
+export type { DefineAutocompleteConfig } from "./definitions/autocomplete.ts";
 export { defineUserCommand } from "./definitions/user-command.ts";
 export { defineMessageCommand } from "./definitions/message-command.ts";
 
@@ -55,3 +56,13 @@ export { publishCommands } from "./publish.ts";
 export type { PublishCommandsOptions } from "./publish.ts";
 
 export { CollectorTimeoutError } from "./collectors/errors.ts";
+
+export {
+	isCommand,
+	isUserCommand,
+	isMessageCommand,
+	isButton,
+	isSelectMenu,
+	isModal,
+	isAutocomplete,
+} from "./guards.ts";

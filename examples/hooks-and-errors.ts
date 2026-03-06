@@ -7,7 +7,7 @@ import {
 	Routes,
 	type RESTGetAPIGatewayBotResult,
 } from "discord-api-types/v10";
-import { createBot, defineCommand, defineEvent, publishCommands } from "../src/index.ts";
+import { createBot, defineCommand, defineEvent, isCommand, publishCommands } from "../src/index.ts";
 
 const token = process.env.DISCORD_TOKEN!;
 
@@ -55,6 +55,14 @@ createBot({
 		},
 		onError: async (_ctx, error) => {
 			console.error("Unhandled error:", error);
+		},
+		beforeInteraction: async (ctx) => {
+			if (isCommand(ctx)) {
+				console.log(`[beforeInteraction] command: ${ctx.interaction.data.name}`);
+			}
+		},
+		afterInteraction: async () => {
+			console.log("[afterInteraction] done");
 		},
 	},
 	errorResponse: { content: "Something went wrong!", flags: MessageFlags.Ephemeral },
