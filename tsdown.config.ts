@@ -8,5 +8,7 @@ export default defineConfig({
 	clean: true,
 	platform: "node",
 	target: "esnext",
-	external: [/^@discordjs\//, /^discord-api-types/],
+	deps: {
+		neverBundle: [/^@discordjs\//, /^discord-api-types/],
+	},
 });
