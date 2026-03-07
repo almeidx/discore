@@ -40,10 +40,10 @@
 		"prepare": "husky .github/husky"
 	},
 	"devDependencies": {
-		"@discordjs/core": "3.0.0-dev.1772755842-41439d3a4",
-		"@discordjs/rest": "3.0.0-dev.1772755842-41439d3a4",
-		"@discordjs/ws": "3.0.0-dev.1772755842-41439d3a4",
-		"discord-api-types": "^0.38.40",
+		"@discordjs/core": "3.0.0-dev.1772841884-52173b6ca",
+		"@discordjs/rest": "3.0.0-dev.1772841884-52173b6ca",
+		"@discordjs/ws": "3.0.0-dev.1772841884-52173b6ca",
+		"discord-api-types": "^0.38.41",
 		"husky": "^9.1.7",
 		"oxfmt": "^0.36.0",
 		"oxlint": "^1.51.0",
