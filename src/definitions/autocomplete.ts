@@ -10,7 +10,7 @@ export interface DefineAutocompleteConfig {
 	 */
 	command: string | [string, string] | [string, string, string];
 	option: string;
-	handler: (ctx: AutocompleteContext) => Promise<void>;
+	handler: (ctx: AutocompleteContext) => void | Promise<void>;
 }
 
 /** Defines an autocomplete handler for a specific command option. */

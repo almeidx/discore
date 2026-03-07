@@ -33,7 +33,7 @@ export function createAutocompleteContext(
 
 interface AutocompleteParseResult {
 	focused: { name: string; value: string | number };
-	options: Record<string, unknown>;
+	options: Record<string, string | number | boolean>;
 	subcommand: string | undefined;
 	subcommandGroup: string | undefined;
 }
@@ -41,7 +41,7 @@ interface AutocompleteParseResult {
 function parseAutocompleteOptions(interaction: APIApplicationCommandAutocompleteInteraction): AutocompleteParseResult {
 	const allOptions = interaction.data.options ?? [];
 	let focused: { name: string; value: string | number } | undefined;
-	const options: Record<string, unknown> = {};
+	const options: Record<string, string | number | boolean> = {};
 	let subcommand: string | undefined;
 	let subcommandGroup: string | undefined;
 
@@ -57,7 +57,7 @@ function parseAutocompleteOptions(interaction: APIApplicationCommandAutocomplete
 			if ("focused" in opt && opt.focused) {
 				focused = { name: opt.name, value: opt.value };
 			}
-			options[opt.name] = opt.value;
+			options[opt.name] = opt.value as string | number | boolean;
 		}
 	}
 

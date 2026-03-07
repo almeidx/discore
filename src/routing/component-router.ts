@@ -1,6 +1,6 @@
 import type { API, CreateInteractionResponseOptions } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
-import type { APIInteraction, APIMessageComponentInteraction, APIModalSubmitInteraction } from "discord-api-types/v10";
+import type { APIMessageComponentInteraction, APIModalSubmitInteraction } from "discord-api-types/v10";
 import { ComponentType, MessageFlags } from "discord-api-types/v10";
 import { createButtonContext } from "../context/button.ts";
 import { createModalContext } from "../context/modal.ts";
@@ -15,6 +15,14 @@ export interface ComponentRouter {
 	handleModal(api: API, gateway: WebSocketManager, interaction: APIModalSubmitInteraction): Promise<void>;
 }
 
+function matchCustomId(pattern: string | RegExp, customId: string): Record<string, string> | null {
+	if (typeof pattern === "string") {
+		return pattern === customId ? {} : null;
+	}
+	const match = pattern.exec(customId);
+	return match ? (match.groups ?? {}) : null;
+}
+
 export function createComponentRouter(
 	buttons: ButtonDefinition[],
 	selectMenus: SelectMenuDefinition[],
@@ -27,39 +35,39 @@ export function createComponentRouter(
 		flags: MessageFlags.Ephemeral,
 	};
 
-	async function sendErrorResponse(api: API, interaction: APIInteraction, error: unknown): Promise<void> {
+	async function sendErrorResponse(api: API, ctx: InteractionContext, error: unknown): Promise<void> {
 		const response = errorResponse === undefined ? defaultErrorResponse : errorResponse;
 		if (response === null) return;
 
-		const data = typeof response === "function" ? response({ interaction }, error) : response;
+		const data = typeof response === "function" ? response(ctx, error) : response;
 
 		try {
-			await api.interactions.reply(interaction.id, interaction.token, data);
+			await ctx.reply(data);
 		} catch {
-			try {
-				await api.interactions.followUp(interaction.application_id, interaction.token, data);
-			} catch {
-				// exhausted all response methods
-			}
+			// exhausted response methods
 		}
 	}
 
-	async function runHandler(
+	async function runHandler<TContext extends InteractionContext>(
 		api: API,
-		interaction: APIInteraction,
-		ctx: InteractionContext,
-		handler: () => Promise<void>,
+		ctx: TContext,
+		handler: () => void | Promise<void>,
+		onError?: (ctx: TContext, error: unknown) => Promise<boolean | void> | boolean | void,
 	): Promise<void> {
 		try {
 			await handler();
 		} catch (error) {
 			let suppressed = false;
-			if (hooks.onError) {
+			if (onError) {
+				const result = await onError(ctx, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed && hooks.onError) {
 				const result = await hooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
-				await sendErrorResponse(api, interaction, error);
+				await sendErrorResponse(api, ctx, error);
 			}
 		}
 	}
@@ -86,24 +94,22 @@ export function createComponentRouter(
 
 			if (isButton) {
 				for (const def of buttons) {
-					const match = def.customId.exec(customId);
-					if (match) {
-						const params = match.groups ?? {};
+					const params = matchCustomId(def.customId, customId);
+					if (params) {
 						const ctx = createButtonContext(api, gateway, interaction, params);
 						if (!(await runBeforeInteraction(ctx))) return;
-						await runHandler(api, interaction, ctx, () => def.handler(ctx));
+						await runHandler(api, ctx, () => def.handler(ctx), def.hooks?.onError);
 						await runAfterInteraction(ctx);
 						return;
 					}
 				}
 			} else {
 				for (const def of selectMenus) {
-					const match = def.customId.exec(customId);
-					if (match) {
-						const params = match.groups ?? {};
+					const params = matchCustomId(def.customId, customId);
+					if (params) {
 						const ctx = createSelectMenuContext(api, gateway, interaction, params);
 						if (!(await runBeforeInteraction(ctx))) return;
-						await runHandler(api, interaction, ctx, () => def.handler(ctx));
+						await runHandler(api, ctx, () => def.handler(ctx), def.hooks?.onError);
 						await runAfterInteraction(ctx);
 						return;
 					}
@@ -115,12 +121,11 @@ export function createComponentRouter(
 			const customId = interaction.data.custom_id;
 
 			for (const def of modals) {
-				const match = def.customId.exec(customId);
-				if (match) {
-					const params = match.groups ?? {};
+				const params = matchCustomId(def.customId, customId);
+				if (params) {
 					const ctx = createModalContext(api, gateway, interaction, params);
 					if (!(await runBeforeInteraction(ctx))) return;
-					await runHandler(api, interaction, ctx, () => def.handler(ctx));
+					await runHandler(api, ctx, () => def.handler(ctx), def.hooks?.onError);
 					await runAfterInteraction(ctx);
 					return;
 				}

@@ -60,7 +60,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [ping] });
+await publishCommands({ rest, commands: [ping] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

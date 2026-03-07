@@ -14,7 +14,7 @@ import type {
 	UserCommandContext,
 	MessageCommandContext,
 } from "./contexts.ts";
-import type { CommandHooks } from "./hooks.ts";
+import type { CommandHooks, HandlerHooks } from "./hooks.ts";
 
 export const DefinitionType = {
 	Command: 1,
@@ -40,12 +40,13 @@ export interface CommandDefinition {
 	type: typeof DefinitionType.Command;
 	data: CommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: CommandContext) => Promise<void>;
+	handler: (ctx: CommandContext) => void | Promise<void>;
 }
 
 export interface CommandGroupDefinition {
 	type: typeof DefinitionType.CommandGroup;
 	data: CommandGroupData;
+	hooks?: CommandHooks;
 	subcommands: (CommandDefinition | SubcommandGroup)[];
 }
 
@@ -53,32 +54,36 @@ export interface EventDefinition {
 	type: typeof DefinitionType.Event;
 	event: GatewayDispatchEvents;
 	priority: number;
-	handler: (ctx: EventContext) => Promise<void>;
+	once?: boolean;
+	handler: (ctx: EventContext) => void | Promise<void>;
 }
 
 export interface ButtonDefinition {
 	type: typeof DefinitionType.Button;
-	customId: RegExp;
-	handler: (ctx: ButtonContext) => Promise<void>;
+	customId: string | RegExp;
+	hooks?: HandlerHooks<ButtonContext>;
+	handler: (ctx: ButtonContext) => void | Promise<void>;
 }
 
 export interface SelectMenuDefinition {
 	type: typeof DefinitionType.SelectMenu;
-	customId: RegExp;
-	handler: (ctx: SelectMenuContext) => Promise<void>;
+	customId: string | RegExp;
+	hooks?: HandlerHooks<SelectMenuContext>;
+	handler: (ctx: SelectMenuContext) => void | Promise<void>;
 }
 
 export interface ModalDefinition {
 	type: typeof DefinitionType.Modal;
-	customId: RegExp;
-	handler: (ctx: ModalContext) => Promise<void>;
+	customId: string | RegExp;
+	hooks?: HandlerHooks<ModalContext>;
+	handler: (ctx: ModalContext) => void | Promise<void>;
 }
 
 export interface AutocompleteDefinition {
 	type: typeof DefinitionType.Autocomplete;
 	command: string | string[];
 	option: string;
-	handler: (ctx: AutocompleteContext) => Promise<void>;
+	handler: (ctx: AutocompleteContext) => void | Promise<void>;
 }
 
 export type ContextMenuCommandData = Omit<RESTPostAPIContextMenuApplicationCommandsJSONBody, "type">;
@@ -87,14 +92,14 @@ export interface UserCommandDefinition {
 	type: typeof DefinitionType.UserCommand;
 	data: ContextMenuCommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: UserCommandContext) => Promise<void>;
+	handler: (ctx: UserCommandContext) => void | Promise<void>;
 }
 
 export interface MessageCommandDefinition {
 	type: typeof DefinitionType.MessageCommand;
 	data: ContextMenuCommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: MessageCommandContext) => Promise<void>;
+	handler: (ctx: MessageCommandContext) => void | Promise<void>;
 }
 
 export interface SubcommandGroup {

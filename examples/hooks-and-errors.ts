@@ -69,7 +69,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [riskyCommand] });
+await publishCommands({ rest, commands: [riskyCommand] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

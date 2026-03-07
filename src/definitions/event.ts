@@ -6,7 +6,8 @@ import type { GatewayEventData } from "../types/events.ts";
 export interface DefineEventConfig<E extends GatewayDispatchEvents> {
 	event: E;
 	priority?: number;
-	handler: (ctx: EventContext<GatewayEventData<E>>) => Promise<void>;
+	once?: boolean;
+	handler: (ctx: EventContext<GatewayEventData<E>>) => void | Promise<void>;
 }
 
 export function defineEvent<E extends GatewayDispatchEvents>(config: DefineEventConfig<E>): EventDefinition {
@@ -14,6 +15,7 @@ export function defineEvent<E extends GatewayDispatchEvents>(config: DefineEvent
 		type: DefinitionType.Event,
 		event: config.event,
 		priority: config.priority ?? 0,
+		once: config.once,
 		handler: config.handler as EventDefinition["handler"],
 	};
 }

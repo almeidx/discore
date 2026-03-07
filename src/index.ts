@@ -1,5 +1,11 @@
 export type { InferOptions, OptionTypeMap, ResolvedUser } from "./types/options.ts";
-export type { CommandHooks, GlobalHooks, AnyInteractionContext, AnyCommandContext } from "./types/hooks.ts";
+export type {
+	HandlerHooks,
+	CommandHooks,
+	GlobalHooks,
+	AnyInteractionContext,
+	AnyCommandContext,
+} from "./types/hooks.ts";
 export type { GatewayEventData } from "./types/events.ts";
 export type {
 	BaseContext,

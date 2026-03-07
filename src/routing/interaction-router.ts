@@ -25,6 +25,7 @@ import { createModalContext } from "../context/modal.ts";
 import { createSelectMenuContext } from "../context/select-menu.ts";
 import { createUserCommandContext } from "../context/user-command.ts";
 import { parseOptions } from "../options-parser.ts";
+import type { InteractionContext } from "../types/contexts.ts";
 import type {
 	CommandDefinition,
 	CommandGroupDefinition,
@@ -33,13 +34,13 @@ import type {
 	MessageCommandDefinition,
 	SubcommandGroup,
 } from "../types/definitions.ts";
-import type { GlobalHooks, AnyInteractionContext } from "../types/hooks.ts";
+import type { GlobalHooks, AnyInteractionContext, CommandHooks } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { ComponentRouter } from "./component-router.ts";
 
 export type ErrorResponseOption =
 	| CreateInteractionResponseOptions
-	| ((ctx: { interaction: APIInteraction }, error: unknown) => CreateInteractionResponseOptions)
+	| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
 	| null
 	| undefined;
 
@@ -77,20 +78,16 @@ export function createInteractionRouter(config: {
 		flags: MessageFlags.Ephemeral,
 	};
 
-	async function sendErrorResponse(api: API, interaction: APIInteraction, error: unknown): Promise<void> {
+	async function sendErrorResponse(api: API, ctx: InteractionContext, error: unknown): Promise<void> {
 		const response = errorResponse === undefined ? defaultErrorResponse : errorResponse;
 		if (response === null) return;
 
-		const data = typeof response === "function" ? response({ interaction }, error) : response;
+		const data = typeof response === "function" ? response(ctx, error) : response;
 
 		try {
-			await api.interactions.reply(interaction.id, interaction.token, data);
+			await ctx.reply(data);
 		} catch {
-			try {
-				await api.interactions.followUp(interaction.application_id, interaction.token, data);
-			} catch {
-				// exhausted all response methods
-			}
+			// exhausted response methods
 		}
 	}
 
@@ -117,9 +114,11 @@ export function createInteractionRouter(config: {
 		const commandName = interaction.data.name;
 
 		let def: CommandDefinition | undefined;
+		let groupHooks: CommandHooks | undefined;
 
 		const group = commandGroups.get(commandName);
 		if (group) {
+			groupHooks = group.hooks;
 			const parsed = parseOptions(interaction);
 			if (parsed.subcommandGroup) {
 				const subGroup = group.subcommands.find(
@@ -139,32 +138,56 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
-		const activeHooks = {
-			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
-			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
-			onError: def.hooks?.onError ?? hooks.onError,
-		};
-
 		try {
-			if (activeHooks.beforeCommand) {
-				const result = await activeHooks.beforeCommand(ctx);
+			if (hooks.beforeCommand) {
+				const result = await hooks.beforeCommand(ctx);
+				if (result === false) return;
+			}
+			if (groupHooks?.beforeCommand) {
+				const result = await groupHooks.beforeCommand(ctx);
+				if (result === false) return;
+			}
+			if (def.hooks?.beforeCommand) {
+				const result = await def.hooks.beforeCommand(ctx);
 				if (result === false) return;
 			}
 
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
-			if (activeHooks.onError) {
-				const result = await activeHooks.onError(ctx, error);
+			if (def.hooks?.onError) {
+				const result = await def.hooks.onError(ctx, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed && groupHooks?.onError) {
+				const result = await groupHooks.onError(ctx, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed && hooks.onError) {
+				const result = await hooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
-				await sendErrorResponse(api, interaction, error);
+				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (activeHooks.afterCommand) {
+			if (def.hooks?.afterCommand) {
 				try {
-					await activeHooks.afterCommand(ctx);
+					await def.hooks.afterCommand(ctx);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+			if (groupHooks?.afterCommand) {
+				try {
+					await groupHooks.afterCommand(ctx);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+			if (hooks.afterCommand) {
+				try {
+					await hooks.afterCommand(ctx);
 				} catch {
 					// afterCommand errors are swallowed
 				}
@@ -185,32 +208,41 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
-		const activeHooks = {
-			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
-			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
-			onError: def.hooks?.onError ?? hooks.onError,
-		};
-
 		try {
-			if (activeHooks.beforeCommand) {
-				const result = await activeHooks.beforeCommand(ctx);
+			if (hooks.beforeCommand) {
+				const result = await hooks.beforeCommand(ctx);
+				if (result === false) return;
+			}
+			if (def.hooks?.beforeCommand) {
+				const result = await def.hooks.beforeCommand(ctx);
 				if (result === false) return;
 			}
 
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
-			if (activeHooks.onError) {
-				const result = await activeHooks.onError(ctx, error);
+			if (def.hooks?.onError) {
+				const result = await def.hooks.onError(ctx, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed && hooks.onError) {
+				const result = await hooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
-				await sendErrorResponse(api, interaction, error);
+				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (activeHooks.afterCommand) {
+			if (def.hooks?.afterCommand) {
 				try {
-					await activeHooks.afterCommand(ctx);
+					await def.hooks.afterCommand(ctx);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+			if (hooks.afterCommand) {
+				try {
+					await hooks.afterCommand(ctx);
 				} catch {
 					// afterCommand errors are swallowed
 				}
@@ -231,32 +263,41 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
-		const activeHooks = {
-			beforeCommand: def.hooks?.beforeCommand ?? hooks.beforeCommand,
-			afterCommand: def.hooks?.afterCommand ?? hooks.afterCommand,
-			onError: def.hooks?.onError ?? hooks.onError,
-		};
-
 		try {
-			if (activeHooks.beforeCommand) {
-				const result = await activeHooks.beforeCommand(ctx);
+			if (hooks.beforeCommand) {
+				const result = await hooks.beforeCommand(ctx);
+				if (result === false) return;
+			}
+			if (def.hooks?.beforeCommand) {
+				const result = await def.hooks.beforeCommand(ctx);
 				if (result === false) return;
 			}
 
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
-			if (activeHooks.onError) {
-				const result = await activeHooks.onError(ctx, error);
+			if (def.hooks?.onError) {
+				const result = await def.hooks.onError(ctx, error);
+				if (result === false) suppressed = true;
+			}
+			if (!suppressed && hooks.onError) {
+				const result = await hooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
-				await sendErrorResponse(api, interaction, error);
+				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (activeHooks.afterCommand) {
+			if (def.hooks?.afterCommand) {
 				try {
-					await activeHooks.afterCommand(ctx);
+					await def.hooks.afterCommand(ctx);
+				} catch {
+					// afterCommand errors are swallowed
+				}
+			}
+			if (hooks.afterCommand) {
+				try {
+					await hooks.afterCommand(ctx);
 				} catch {
 					// afterCommand errors are swallowed
 				}

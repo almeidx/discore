@@ -244,7 +244,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [config] });
+await publishCommands({ rest, commands: [config] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

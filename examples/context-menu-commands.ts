@@ -64,7 +64,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [userInfo, bookmark] });
+await publishCommands({ rest, commands: [userInfo, bookmark] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

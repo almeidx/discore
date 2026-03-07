@@ -144,7 +144,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [verify, roles, feedback] });
+await publishCommands({ rest, commands: [verify, roles, feedback] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

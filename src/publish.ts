@@ -1,5 +1,5 @@
 import { API } from "@discordjs/core";
-import { REST } from "@discordjs/rest";
+import type { REST } from "@discordjs/rest";
 import {
 	ApplicationCommandOptionType,
 	ApplicationCommandType,
@@ -18,7 +18,7 @@ import {
 } from "./types/definitions.ts";
 
 export interface PublishCommandsOptions {
-	token: string;
+	rest: REST;
 	commands: AnyCommandDefinition[];
 	guildId?: string;
 }
@@ -94,8 +94,7 @@ function toPayload(cmd: AnyCommandDefinition): CommandPayload {
 }
 
 export async function publishCommands(options: PublishCommandsOptions): Promise<APIApplicationCommand[]> {
-	const rest = new REST().setToken(options.token);
-	const api = new API(rest);
+	const api = new API(options.rest);
 
 	const payloads = options.commands.map(toPayload);
 

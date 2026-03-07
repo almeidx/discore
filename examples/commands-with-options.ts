@@ -76,7 +76,7 @@ const gateway = new WebSocketManager({
 createBot({ rest, gateway, commands: [ban, userinfo], events: [ready] });
 
 console.log("Publishing commands...");
-const published = await publishCommands({ token, commands: [ban, userinfo] });
+const published = await publishCommands({ rest, commands: [ban, userinfo] });
 console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");

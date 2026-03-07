@@ -35,7 +35,7 @@ Functional, no classes. The core pattern is `defineX()` functions that return pl
 
 ### Component routing
 
-Buttons, select menus, and modals match by regex on `customId`. Named capture groups become `ctx.params`. All matching handlers fire (broadcast, not first-match).
+Buttons, select menus, and modals match by regex or exact string on `customId`. Named capture groups become `ctx.params`. First matching handler fires (first-match, not broadcast).
 
 ### Collectors
 

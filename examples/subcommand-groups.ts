@@ -109,7 +109,7 @@ createBot({
 });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [mod] });
+await publishCommands({ rest, commands: [mod] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

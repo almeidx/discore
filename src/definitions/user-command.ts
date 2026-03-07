@@ -5,7 +5,7 @@ import type { CommandHooks } from "../types/hooks.ts";
 export interface DefineUserCommandConfig {
 	data: ContextMenuCommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: UserCommandContext) => Promise<void>;
+	handler: (ctx: UserCommandContext) => void | Promise<void>;
 }
 
 export function defineUserCommand(config: DefineUserCommandConfig): UserCommandDefinition {

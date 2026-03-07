@@ -106,7 +106,7 @@ const gateway = new WebSocketManager({
 createBot({ rest, gateway, commands: [confirm, poll], events: [ready] });
 
 console.log("Publishing commands...");
-await publishCommands({ token, commands: [confirm, poll] });
+await publishCommands({ rest, commands: [confirm, poll] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

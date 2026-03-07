@@ -131,7 +131,7 @@ export interface MessageCommandContext extends InteractionContext {
 export interface AutocompleteContext extends BaseContext {
 	interaction: APIApplicationCommandAutocompleteInteraction;
 	focused: { name: string; value: string | number };
-	options: Record<string, unknown>;
+	options: Record<string, string | number | boolean>;
 	subcommand: string | undefined;
 	subcommandGroup: string | undefined;
 	respond(choices: APIApplicationCommandOptionChoice[]): Promise<void>;

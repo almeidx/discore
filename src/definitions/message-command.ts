@@ -5,7 +5,7 @@ import type { CommandHooks } from "../types/hooks.ts";
 export interface DefineMessageCommandConfig {
 	data: ContextMenuCommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: MessageCommandContext) => Promise<void>;
+	handler: (ctx: MessageCommandContext) => void | Promise<void>;
 }
 
 export function defineMessageCommand(config: DefineMessageCommandConfig): MessageCommandDefinition {

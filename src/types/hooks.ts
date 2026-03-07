@@ -22,7 +22,15 @@ export type AnyInteractionContext =
 export type AnyCommandContext = CommandContext | UserCommandContext | MessageCommandContext;
 
 /**
- * Per-command lifecycle hooks. When set on a command, these override global hooks entirely.
+ * Per-handler hooks for component interaction handlers (buttons, select menus, modals).
+ */
+export interface HandlerHooks<TContext> {
+	/** Runs when the handler throws. Return `false` to suppress the default error response. */
+	onError?: (ctx: TContext, error: unknown) => Promise<boolean | void> | boolean | void;
+}
+
+/**
+ * Per-command lifecycle hooks. Both global and per-command hooks run — global first, then per-command.
  */
 export interface CommandHooks {
 	/** Runs before the handler. Return `false` to cancel execution. */
@@ -34,7 +42,8 @@ export interface CommandHooks {
 }
 
 /**
- * Global lifecycle hooks applied to all commands that don't define their own.
+ * Global lifecycle hooks applied to all interactions and events.
+ * For commands, these compose with per-command hooks (global fires first).
  */
 export interface GlobalHooks {
 	beforeCommand?: (ctx: AnyCommandContext) => Promise<boolean | void> | boolean | void;

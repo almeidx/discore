@@ -13,19 +13,32 @@ export interface EventRouter {
 		gateway: WebSocketManager,
 		shardId: number,
 	): Promise<void>;
+	addHandler(def: EventDefinition): void;
+	removeHandler(def: EventDefinition): boolean;
 }
 
 export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks): EventRouter {
 	const handlerMap = new Map<GatewayDispatchEvents, EventDefinition[]>();
 
-	for (const def of events) {
+	function addToMap(def: EventDefinition): void {
 		const existing = handlerMap.get(def.event) ?? [];
 		existing.push(def);
+		existing.sort((a, b) => a.priority - b.priority);
 		handlerMap.set(def.event, existing);
 	}
 
-	for (const [, handlers] of handlerMap) {
-		handlers.sort((a, b) => a.priority - b.priority);
+	function removeFromMap(def: EventDefinition): boolean {
+		const existing = handlerMap.get(def.event);
+		if (!existing) return false;
+		const idx = existing.indexOf(def);
+		if (idx === -1) return false;
+		existing.splice(idx, 1);
+		if (existing.length === 0) handlerMap.delete(def.event);
+		return true;
+	}
+
+	for (const def of events) {
+		addToMap(def);
 	}
 
 	return {
@@ -33,16 +46,33 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 			const handlers = handlerMap.get(event);
 			if (!handlers) return;
 
-			for (const def of handlers) {
-				const ctx = createEventContext(api, gateway, data, shardId);
-				try {
-					await def.handler(ctx);
-				} catch (error) {
-					if (hooks.onEventError) {
-						await hooks.onEventError(ctx, error);
+			const onceHandlers: EventDefinition[] = [];
+
+			await Promise.allSettled(
+				handlers.map(async (def) => {
+					const ctx = createEventContext(api, gateway, data, shardId);
+					try {
+						await def.handler(ctx);
+						if (def.once) onceHandlers.push(def);
+					} catch (error) {
+						if (hooks.onEventError) {
+							await hooks.onEventError(ctx, error);
+						}
 					}
-				}
+				}),
+			);
+
+			for (const def of onceHandlers) {
+				removeFromMap(def);
 			}
+		},
+
+		addHandler(def) {
+			addToMap(def);
+		},
+
+		removeHandler(def) {
+			return removeFromMap(def);
 		},
 	};
 }

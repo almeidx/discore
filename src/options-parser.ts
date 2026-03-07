@@ -37,22 +37,27 @@ export function parseOptions(interaction: APIChatInputApplicationCommandInteract
 	for (const opt of rawOptions) {
 		switch (opt.type) {
 			case ApplicationCommandOptionType.Attachment: {
-				options[opt.name] = resolved?.attachments?.[opt.value];
+				const attachment = resolved?.attachments?.[opt.value];
+				if (!attachment) throw new Error(`Resolved attachment not found for option "${opt.name}"`);
+				options[opt.name] = attachment;
 				break;
 			}
 			case ApplicationCommandOptionType.User: {
-				options[opt.name] = {
-					user: resolved?.users?.[opt.value],
-					member: resolved?.members?.[opt.value],
-				};
+				const user = resolved?.users?.[opt.value];
+				if (!user) throw new Error(`Resolved user not found for option "${opt.name}"`);
+				options[opt.name] = { user, member: resolved?.members?.[opt.value] };
 				break;
 			}
 			case ApplicationCommandOptionType.Channel: {
-				options[opt.name] = resolved?.channels?.[opt.value];
+				const channel = resolved?.channels?.[opt.value];
+				if (!channel) throw new Error(`Resolved channel not found for option "${opt.name}"`);
+				options[opt.name] = channel;
 				break;
 			}
 			case ApplicationCommandOptionType.Role: {
-				options[opt.name] = resolved?.roles?.[opt.value];
+				const role = resolved?.roles?.[opt.value];
+				if (!role) throw new Error(`Resolved role not found for option "${opt.name}"`);
+				options[opt.name] = role;
 				break;
 			}
 			case ApplicationCommandOptionType.Mentionable: {
@@ -60,7 +65,9 @@ export function parseOptions(interaction: APIChatInputApplicationCommandInteract
 				if (user) {
 					options[opt.name] = { user, member: resolved?.members?.[opt.value] };
 				} else {
-					options[opt.name] = resolved?.roles?.[opt.value];
+					const role = resolved?.roles?.[opt.value];
+					if (!role) throw new Error(`Resolved mentionable not found for option "${opt.name}"`);
+					options[opt.name] = role;
 				}
 				break;
 			}

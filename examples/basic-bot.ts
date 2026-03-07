@@ -47,7 +47,7 @@ const bot = createBot({
 });
 
 console.log("Publishing commands...");
-const published = await publishCommands({ token, commands: [ping] });
+const published = await publishCommands({ rest, commands: [ping] });
 console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");

@@ -1,12 +1,13 @@
 import { API, type CreateInteractionResponseOptions } from "@discordjs/core";
 import type { REST } from "@discordjs/rest";
 import { WebSocketShardEvents, type WebSocketManager } from "@discordjs/ws";
-import { GatewayDispatchEvents, type APIInteraction, type GatewayDispatchPayload } from "discord-api-types/v10";
+import { GatewayDispatchEvents, type GatewayDispatchPayload } from "discord-api-types/v10";
 import { createCollectorStore } from "./collectors/collector-store.ts";
 import { createModalCollectorStore } from "./collectors/modal-collector-store.ts";
 import { createComponentRouter } from "./routing/component-router.ts";
 import { createEventRouter } from "./routing/event-router.ts";
 import { createInteractionRouter } from "./routing/interaction-router.ts";
+import type { InteractionContext } from "./types/contexts.ts";
 import {
 	DefinitionType,
 	type AnyCommandDefinition,
@@ -33,7 +34,7 @@ export interface CreateBotOptions {
 	hooks?: GlobalHooks;
 	errorResponse?:
 		| CreateInteractionResponseOptions
-		| ((ctx: { interaction: APIInteraction }, error: unknown) => CreateInteractionResponseOptions)
+		| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
 		| null;
 }
 
@@ -44,6 +45,12 @@ export interface Bot {
 	commandGroups: Map<string, CommandGroupDefinition>;
 	userCommands: Map<string, UserCommandDefinition>;
 	messageCommands: Map<string, MessageCommandDefinition>;
+	addCommand(cmd: AnyCommandDefinition): void;
+	removeCommand(name: string): boolean;
+	addEvent(event: EventDefinition): void;
+	removeEvent(event: EventDefinition): boolean;
+	addInteraction(interaction: InteractionDefinition): void;
+	removeInteraction(interaction: InteractionDefinition): boolean;
 	destroy(): void;
 }
 
@@ -139,6 +146,80 @@ export function createBot(options: CreateBotOptions): Bot {
 		commandGroups: commandGroupMap,
 		userCommands: userCommandMap,
 		messageCommands: messageCommandMap,
+
+		addCommand(cmd: AnyCommandDefinition): void {
+			switch (cmd.type) {
+				case DefinitionType.CommandGroup:
+					commandGroupMap.set(cmd.data.name, cmd);
+					break;
+				case DefinitionType.UserCommand:
+					userCommandMap.set(cmd.data.name, cmd);
+					break;
+				case DefinitionType.MessageCommand:
+					messageCommandMap.set(cmd.data.name, cmd);
+					break;
+				default:
+					commandMap.set(cmd.data.name, cmd);
+					break;
+			}
+		},
+
+		removeCommand(name: string): boolean {
+			return (
+				commandMap.delete(name) ||
+				commandGroupMap.delete(name) ||
+				userCommandMap.delete(name) ||
+				messageCommandMap.delete(name)
+			);
+		},
+
+		addEvent(event: EventDefinition): void {
+			eventRouter.addHandler(event);
+		},
+
+		removeEvent(event: EventDefinition): boolean {
+			return eventRouter.removeHandler(event);
+		},
+
+		addInteraction(interaction: InteractionDefinition): void {
+			switch (interaction.type) {
+				case DefinitionType.Button:
+					buttons.push(interaction);
+					break;
+				case DefinitionType.SelectMenu:
+					selectMenus.push(interaction);
+					break;
+				case DefinitionType.Modal:
+					modals.push(interaction);
+					break;
+				case DefinitionType.Autocomplete:
+					autocompletes.push(interaction);
+					break;
+			}
+		},
+
+		removeInteraction(interaction: InteractionDefinition): boolean {
+			let arr: InteractionDefinition[];
+			switch (interaction.type) {
+				case DefinitionType.Button:
+					arr = buttons;
+					break;
+				case DefinitionType.SelectMenu:
+					arr = selectMenus;
+					break;
+				case DefinitionType.Modal:
+					arr = modals;
+					break;
+				case DefinitionType.Autocomplete:
+					arr = autocompletes;
+					break;
+			}
+			const idx = arr.indexOf(interaction);
+			if (idx === -1) return false;
+			arr.splice(idx, 1);
+			return true;
+		},
+
 		destroy() {
 			gateway.off(WebSocketShardEvents.Dispatch, listener);
 		},
