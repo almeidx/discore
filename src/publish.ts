@@ -15,7 +15,6 @@ import {
 	type CommandGroupDefinition,
 	type UserCommandDefinition,
 	type MessageCommandDefinition,
-	type SubcommandGroup,
 } from "./types/definitions.ts";
 
 export interface PublishCommandsOptions {
@@ -32,31 +31,32 @@ function commandToPayload(cmd: CommandDefinition): CommandPayload {
 	return {
 		...cmd.data,
 		type: ApplicationCommandType.ChatInput,
-		options: [...cmd.data.options] as APIApplicationCommandOption[],
+		options: cmd.data.options as APIApplicationCommandOption[],
 	};
 }
 
 function commandGroupToPayload(group: CommandGroupDefinition): CommandPayload {
-	const options: APIApplicationCommandOption[] = group.subcommands.map((entry) => {
+	const options = group.subcommands.map((entry): APIApplicationCommandOption => {
 		if ("type" in entry) {
 			return {
-				...entry.data,
-				type: ApplicationCommandOptionType.Subcommand as number,
+				name: entry.data.name,
+				description: entry.data.description,
+				type: ApplicationCommandOptionType.Subcommand,
 				options: [...entry.data.options],
-			} as APIApplicationCommandOption;
+			};
 		}
 
-		const subGroup: SubcommandGroup = entry;
 		return {
-			name: subGroup.name,
-			description: subGroup.description,
-			type: ApplicationCommandOptionType.SubcommandGroup as number,
-			options: subGroup.subcommands.map((sub) => ({
-				...sub.data,
-				type: ApplicationCommandOptionType.Subcommand as number,
+			name: entry.name,
+			description: entry.description,
+			type: ApplicationCommandOptionType.SubcommandGroup,
+			options: entry.subcommands.map((sub) => ({
+				name: sub.data.name,
+				description: sub.data.description,
+				type: ApplicationCommandOptionType.Subcommand as const,
 				options: [...sub.data.options],
 			})),
-		} as APIApplicationCommandOption;
+		};
 	});
 
 	return {

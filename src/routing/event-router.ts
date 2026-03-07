@@ -15,10 +15,8 @@ export interface EventRouter {
 	): Promise<void>;
 }
 
-// EventDefinition<any> is needed because specific event types (e.g. EventDefinition<GatewayDispatchEvents.Ready>)
-// are not assignable to EventDefinition<GatewayDispatchEvents> due to handler contravariance
-export function createEventRouter(events: EventDefinition<any>[], hooks: GlobalHooks): EventRouter {
-	const handlerMap = new Map<GatewayDispatchEvents, EventDefinition<any>[]>();
+export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks): EventRouter {
+	const handlerMap = new Map<GatewayDispatchEvents, EventDefinition[]>();
 
 	for (const def of events) {
 		const existing = handlerMap.get(def.event) ?? [];
@@ -38,7 +36,7 @@ export function createEventRouter(events: EventDefinition<any>[], hooks: GlobalH
 			for (const def of handlers) {
 				const ctx = createEventContext(api, gateway, data, shardId);
 				try {
-					await def.handler(ctx as never);
+					await def.handler(ctx);
 				} catch (error) {
 					if (hooks.onEventError) {
 						await hooks.onEventError(ctx, error);

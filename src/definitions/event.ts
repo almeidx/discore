@@ -9,11 +9,11 @@ export interface DefineEventConfig<E extends GatewayDispatchEvents> {
 	handler: (ctx: EventContext<GatewayEventData<E>>) => Promise<void>;
 }
 
-export function defineEvent<E extends GatewayDispatchEvents>(config: DefineEventConfig<E>): EventDefinition<E> {
+export function defineEvent<E extends GatewayDispatchEvents>(config: DefineEventConfig<E>): EventDefinition {
 	return {
 		type: DefinitionType.Event,
 		event: config.event,
 		priority: config.priority ?? 0,
-		handler: config.handler,
+		handler: config.handler as EventDefinition["handler"],
 	};
 }

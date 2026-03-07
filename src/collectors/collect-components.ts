@@ -28,7 +28,7 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 		store.unregister(collector);
 		options.onEnd?.(collected, reason);
 		if (pending) {
-			pending.resolve({ value: undefined as never, done: true });
+			pending.resolve({ value: undefined, done: true });
 			pending = null;
 		}
 	}
@@ -65,7 +65,7 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 				return Promise.resolve({ value: buffer.shift()!, done: false });
 			}
 			if (stopped) {
-				return Promise.resolve({ value: undefined as never, done: true });
+				return Promise.resolve({ value: undefined, done: true });
 			}
 			pending = deferred<IteratorResult<ComponentInteractionContext>>();
 			return pending.promise;
@@ -73,7 +73,7 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 
 		return(): Promise<IteratorResult<ComponentInteractionContext>> {
 			end("manual");
-			return Promise.resolve({ value: undefined as never, done: true });
+			return Promise.resolve({ value: undefined, done: true });
 		},
 
 		throw(e?: unknown): Promise<IteratorResult<ComponentInteractionContext>> {

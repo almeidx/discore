@@ -21,11 +21,11 @@ export function parseOptions(interaction: APIChatInputApplicationCommandInteract
 			const sub = first.options?.[0];
 			if (sub && sub.type === ApplicationCommandOptionType.Subcommand) {
 				subcommand = sub.name;
-				rawOptions = (sub.options ?? []) as APIApplicationCommandInteractionDataBasicOption[];
+				rawOptions = sub.options ?? [];
 			}
 		} else if (first && first.type === ApplicationCommandOptionType.Subcommand) {
 			subcommand = first.name;
-			rawOptions = (first.options ?? []) as APIApplicationCommandInteractionDataBasicOption[];
+			rawOptions = first.options ?? [];
 		} else {
 			rawOptions = data.options as APIApplicationCommandInteractionDataBasicOption[];
 		}
@@ -37,35 +37,30 @@ export function parseOptions(interaction: APIChatInputApplicationCommandInteract
 	for (const opt of rawOptions) {
 		switch (opt.type) {
 			case ApplicationCommandOptionType.Attachment: {
-				const attachmentId = opt.value as string;
-				options[opt.name] = resolved?.attachments?.[attachmentId];
+				options[opt.name] = resolved?.attachments?.[opt.value];
 				break;
 			}
 			case ApplicationCommandOptionType.User: {
-				const userId = opt.value as string;
 				options[opt.name] = {
-					user: resolved?.users?.[userId],
-					member: resolved?.members?.[userId],
+					user: resolved?.users?.[opt.value],
+					member: resolved?.members?.[opt.value],
 				};
 				break;
 			}
 			case ApplicationCommandOptionType.Channel: {
-				const channelId = opt.value as string;
-				options[opt.name] = resolved?.channels?.[channelId];
+				options[opt.name] = resolved?.channels?.[opt.value];
 				break;
 			}
 			case ApplicationCommandOptionType.Role: {
-				const roleId = opt.value as string;
-				options[opt.name] = resolved?.roles?.[roleId];
+				options[opt.name] = resolved?.roles?.[opt.value];
 				break;
 			}
 			case ApplicationCommandOptionType.Mentionable: {
-				const id = opt.value as string;
-				const user = resolved?.users?.[id];
+				const user = resolved?.users?.[opt.value];
 				if (user) {
-					options[opt.name] = { user, member: resolved?.members?.[id] };
+					options[opt.name] = { user, member: resolved?.members?.[opt.value] };
 				} else {
-					options[opt.name] = resolved?.roles?.[id];
+					options[opt.name] = resolved?.roles?.[opt.value];
 				}
 				break;
 			}

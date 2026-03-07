@@ -14,9 +14,7 @@ import type {
 	UserCommandContext,
 	MessageCommandContext,
 } from "./contexts.ts";
-import type { GatewayEventData } from "./events.ts";
 import type { CommandHooks } from "./hooks.ts";
-import type { InferOptions } from "./options.ts";
 
 export const DefinitionType = {
 	Command: 1,
@@ -38,13 +36,11 @@ export type CommandData<
 
 export type CommandGroupData = Omit<RESTPostAPIChatInputApplicationCommandsJSONBody, "type" | "options">;
 
-export interface CommandDefinition<
-	TOptions extends readonly APIApplicationCommandBasicOption[] = readonly APIApplicationCommandBasicOption[],
-> {
+export interface CommandDefinition {
 	type: typeof DefinitionType.Command;
-	data: CommandData<TOptions>;
+	data: CommandData;
 	hooks?: CommandHooks;
-	handler: (ctx: CommandContext<InferOptions<TOptions>>) => Promise<void>;
+	handler: (ctx: CommandContext) => Promise<void>;
 }
 
 export interface CommandGroupDefinition {
@@ -53,11 +49,11 @@ export interface CommandGroupDefinition {
 	subcommands: (CommandDefinition | SubcommandGroup)[];
 }
 
-export interface EventDefinition<E extends GatewayDispatchEvents = GatewayDispatchEvents> {
+export interface EventDefinition {
 	type: typeof DefinitionType.Event;
-	event: E;
+	event: GatewayDispatchEvents;
 	priority: number;
-	handler: (ctx: EventContext<GatewayEventData<E>>) => Promise<void>;
+	handler: (ctx: EventContext) => Promise<void>;
 }
 
 export interface ButtonDefinition {

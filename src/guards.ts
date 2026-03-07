@@ -1,5 +1,4 @@
 import { InteractionType, ApplicationCommandType, ComponentType } from "discord-api-types/v10";
-import type { APIMessageComponentInteraction } from "discord-api-types/v10";
 import type {
 	CommandContext,
 	ButtonContext,
@@ -35,14 +34,14 @@ export function isMessageCommand(ctx: AnyInteractionContext): ctx is MessageComm
 export function isButton(ctx: AnyInteractionContext): ctx is ButtonContext {
 	return (
 		ctx.interaction.type === InteractionType.MessageComponent &&
-		(ctx.interaction as APIMessageComponentInteraction).data.component_type === ComponentType.Button
+		ctx.interaction.data.component_type === ComponentType.Button
 	);
 }
 
 export function isSelectMenu(ctx: AnyInteractionContext): ctx is SelectMenuContext {
 	return (
 		ctx.interaction.type === InteractionType.MessageComponent &&
-		(ctx.interaction as APIMessageComponentInteraction).data.component_type !== ComponentType.Button
+		ctx.interaction.data.component_type !== ComponentType.Button
 	);
 }
 

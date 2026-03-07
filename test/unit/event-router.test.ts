@@ -8,7 +8,7 @@ import { createMockAPI } from "../fixtures/mock-api.ts";
 describe("createEventRouter", () => {
 	it("dispatches event to matching handler", async () => {
 		const handler = mock.fn(async () => {});
-		const events: EventDefinition<any>[] = [
+		const events: EventDefinition[] = [
 			{ type: DefinitionType.Event, event: GatewayDispatchEvents.MessageCreate, priority: 0, handler },
 		];
 
@@ -30,7 +30,7 @@ describe("createEventRouter", () => {
 	it("executes multiple handlers in priority order", async () => {
 		const order: number[] = [];
 
-		const events: EventDefinition<any>[] = [
+		const events: EventDefinition[] = [
 			{
 				type: DefinitionType.Event,
 				event: GatewayDispatchEvents.MessageCreate,
@@ -65,7 +65,7 @@ describe("createEventRouter", () => {
 
 	it("calls onEventError when handler throws", async () => {
 		const onEventError = mock.fn(async () => {});
-		const events: EventDefinition<any>[] = [
+		const events: EventDefinition[] = [
 			{
 				type: DefinitionType.Event,
 				event: GatewayDispatchEvents.MessageCreate,
@@ -85,7 +85,7 @@ describe("createEventRouter", () => {
 	});
 
 	it("does not propagate error when onEventError is set", async () => {
-		const events: EventDefinition<any>[] = [
+		const events: EventDefinition[] = [
 			{
 				type: DefinitionType.Event,
 				event: GatewayDispatchEvents.MessageCreate,
@@ -103,7 +103,7 @@ describe("createEventRouter", () => {
 
 	it("continues to next handler when one throws", async () => {
 		const secondHandler = mock.fn(async () => {});
-		const events: EventDefinition<any>[] = [
+		const events: EventDefinition[] = [
 			{
 				type: DefinitionType.Event,
 				event: GatewayDispatchEvents.MessageCreate,

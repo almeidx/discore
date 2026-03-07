@@ -37,14 +37,14 @@ export interface DefineCommandConfig<TOptions extends readonly APIApplicationCom
  */
 export function defineCommand<const TOptions extends readonly APIApplicationCommandBasicOption[] = readonly []>(
 	config: DefineCommandConfig<TOptions>,
-): CommandDefinition<TOptions> {
+): CommandDefinition {
 	return {
 		type: DefinitionType.Command,
 		data: {
 			...config.data,
-			options: (config.data.options ?? []) as unknown as TOptions,
+			options: config.data.options ?? [],
 		},
 		hooks: config.hooks,
-		handler: config.handler as CommandDefinition<TOptions>["handler"],
+		handler: config.handler as CommandDefinition["handler"],
 	};
 }

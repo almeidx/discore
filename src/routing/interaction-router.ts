@@ -5,6 +5,7 @@ import {
 	InteractionType,
 	ApplicationCommandType,
 	type APIInteraction,
+	type APIApplicationCommandInteraction,
 	type APIChatInputApplicationCommandInteraction,
 	type APIUserApplicationCommandInteraction,
 	type APIMessageApplicationCommandInteraction,
@@ -150,7 +151,7 @@ export function createInteractionRouter(config: {
 				if (result === false) return;
 			}
 
-			await def.handler(ctx as never);
+			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
 			if (activeHooks.onError) {
@@ -192,7 +193,7 @@ export function createInteractionRouter(config: {
 
 		try {
 			if (activeHooks.beforeCommand) {
-				const result = await activeHooks.beforeCommand(ctx as never);
+				const result = await activeHooks.beforeCommand(ctx);
 				if (result === false) return;
 			}
 
@@ -200,7 +201,7 @@ export function createInteractionRouter(config: {
 		} catch (error) {
 			let suppressed = false;
 			if (activeHooks.onError) {
-				const result = await activeHooks.onError(ctx as never, error);
+				const result = await activeHooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
@@ -209,7 +210,7 @@ export function createInteractionRouter(config: {
 		} finally {
 			if (activeHooks.afterCommand) {
 				try {
-					await activeHooks.afterCommand(ctx as never);
+					await activeHooks.afterCommand(ctx);
 				} catch {
 					// afterCommand errors are swallowed
 				}
@@ -238,7 +239,7 @@ export function createInteractionRouter(config: {
 
 		try {
 			if (activeHooks.beforeCommand) {
-				const result = await activeHooks.beforeCommand(ctx as never);
+				const result = await activeHooks.beforeCommand(ctx);
 				if (result === false) return;
 			}
 
@@ -246,7 +247,7 @@ export function createInteractionRouter(config: {
 		} catch (error) {
 			let suppressed = false;
 			if (activeHooks.onError) {
-				const result = await activeHooks.onError(ctx as never, error);
+				const result = await activeHooks.onError(ctx, error);
 				if (result === false) suppressed = true;
 			}
 			if (!suppressed) {
@@ -255,7 +256,7 @@ export function createInteractionRouter(config: {
 		} finally {
 			if (activeHooks.afterCommand) {
 				try {
-					await activeHooks.afterCommand(ctx as never);
+					await activeHooks.afterCommand(ctx);
 				} catch {
 					// afterCommand errors are swallowed
 				}
@@ -315,37 +316,34 @@ export function createInteractionRouter(config: {
 		async handle(api, gateway, interaction) {
 			switch (interaction.type) {
 				case InteractionType.ApplicationCommand: {
-					if (interaction.data.type === ApplicationCommandType.ChatInput) {
-						await handleCommand(api, gateway, interaction as APIChatInputApplicationCommandInteraction);
-					} else if (interaction.data.type === ApplicationCommandType.User) {
-						await handleUserCommand(api, gateway, interaction as APIUserApplicationCommandInteraction);
-					} else if (interaction.data.type === ApplicationCommandType.Message) {
-						await handleMessageCommand(api, gateway, interaction as APIMessageApplicationCommandInteraction);
+					if (isChatInputCommand(interaction)) {
+						await handleCommand(api, gateway, interaction);
+					} else if (isUserAppCommand(interaction)) {
+						await handleUserCommand(api, gateway, interaction);
+					} else if (isMessageAppCommand(interaction)) {
+						await handleMessageCommand(api, gateway, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.MessageComponent: {
-					const compInteraction = interaction as APIMessageComponentInteraction;
-					const handledByCollector = handleComponentForCollectors(api, gateway, compInteraction);
+					const handledByCollector = handleComponentForCollectors(api, gateway, interaction);
 					if (!handledByCollector) {
-						await componentRouter.handleComponent(api, gateway, compInteraction);
+						await componentRouter.handleComponent(api, gateway, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.ModalSubmit: {
-					const modalInteraction = interaction as APIModalSubmitInteraction;
-					const handledByCollector = handleModalForCollectors(api, gateway, modalInteraction);
+					const handledByCollector = handleModalForCollectors(api, gateway, interaction);
 					if (!handledByCollector) {
-						await componentRouter.handleModal(api, gateway, modalInteraction);
+						await componentRouter.handleModal(api, gateway, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.ApplicationCommandAutocomplete: {
-					const acInteraction = interaction as APIApplicationCommandAutocompleteInteraction;
-					await handleAutocomplete(api, gateway, acInteraction);
+					await handleAutocomplete(api, gateway, interaction);
 					break;
 				}
 			}
@@ -373,4 +371,22 @@ function matchesAutocomplete(
 	}
 
 	return parts[0] === commandName && parts[1] === ctx.subcommandGroup && parts[2] === ctx.subcommand;
+}
+
+function isChatInputCommand(
+	interaction: APIApplicationCommandInteraction,
+): interaction is APIChatInputApplicationCommandInteraction {
+	return interaction.data.type === ApplicationCommandType.ChatInput;
+}
+
+function isUserAppCommand(
+	interaction: APIApplicationCommandInteraction,
+): interaction is APIUserApplicationCommandInteraction {
+	return interaction.data.type === ApplicationCommandType.User;
+}
+
+function isMessageAppCommand(
+	interaction: APIApplicationCommandInteraction,
+): interaction is APIMessageApplicationCommandInteraction {
+	return interaction.data.type === ApplicationCommandType.Message;
 }

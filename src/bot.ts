@@ -28,7 +28,7 @@ export interface CreateBotOptions {
 	rest: REST;
 	gateway: WebSocketManager;
 	commands?: AnyCommandDefinition[];
-	events?: EventDefinition<any>[];
+	events?: EventDefinition[];
 	interactions?: InteractionDefinition[];
 	hooks?: GlobalHooks;
 	errorResponse?:
@@ -124,8 +124,7 @@ export function createBot(options: CreateBotOptions): Bot {
 
 	const listener = async (payload: GatewayDispatchPayload, shardId: number) => {
 		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
-			const interaction = payload.d as APIInteraction;
-			await interactionRouter.handle(api, gateway, interaction);
+			await interactionRouter.handle(api, gateway, payload.d);
 		}
 
 		await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);

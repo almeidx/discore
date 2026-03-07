@@ -55,7 +55,7 @@ function parseAutocompleteOptions(interaction: APIApplicationCommandAutocomplete
 			}
 
 			if ("focused" in opt && opt.focused) {
-				focused = { name: opt.name, value: opt.value as string | number };
+				focused = { name: opt.name, value: opt.value };
 			}
 			options[opt.name] = opt.value;
 		}
