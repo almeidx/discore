@@ -1,6 +1,5 @@
 import type {
 	EventContext,
-	InteractionContext,
 	ButtonContext,
 	SelectMenuContext,
 	ModalContext,
@@ -39,7 +38,11 @@ export interface CommandHooks {
 	afterCommand?: (ctx: AnyCommandContext) => Promise<void> | void;
 	/** Runs when the handler throws. Return `false` to suppress the default error response. */
 	onError?: (ctx: AnyCommandContext, error: unknown) => Promise<boolean | void> | boolean | void;
-	/** Runs when the bot is missing required permissions. Return `true` to bypass and run the command anyway. */
+	/**
+	 * Runs when the bot is missing required permissions.
+	 * Missing-permission hooks run global first, then group, then command.
+	 * Return `true` to bypass the check and run the command anyway.
+	 */
 	onMissingBotPermissions?: (ctx: AnyCommandContext, missing: bigint) => Promise<boolean | void> | boolean | void;
 }
 
@@ -50,12 +53,16 @@ export interface CommandHooks {
 export interface GlobalHooks {
 	beforeCommand?: (ctx: AnyCommandContext) => Promise<boolean | void> | boolean | void;
 	afterCommand?: (ctx: AnyCommandContext) => Promise<void> | void;
-	onError?: (ctx: InteractionContext, error: unknown) => Promise<boolean | void> | boolean | void;
+	onError?: (ctx: AnyInteractionContext, error: unknown) => Promise<boolean | void> | boolean | void;
 	onEventError?: (ctx: EventContext, error: unknown) => Promise<void> | void;
 	/** Runs before any interaction handler (commands, components, modals, autocomplete). Return `false` to cancel. */
 	beforeInteraction?: (ctx: AnyInteractionContext) => Promise<boolean | void> | boolean | void;
 	/** Runs after any interaction handler completes. */
 	afterInteraction?: (ctx: AnyInteractionContext) => Promise<void> | void;
-	/** Runs when the bot is missing required permissions. Return `true` to bypass and run the command anyway. */
+	/**
+	 * Runs when the bot is missing required permissions.
+	 * Missing-permission hooks run global first, then group, then command.
+	 * Return `true` to bypass the check and run the command anyway.
+	 */
 	onMissingBotPermissions?: (ctx: AnyCommandContext, missing: bigint) => Promise<boolean | void> | boolean | void;
 }

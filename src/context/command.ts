@@ -16,7 +16,7 @@ import type {
 	ComponentCollector,
 } from "../types/contexts.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
-import { createInteractionContext } from "./interaction.ts";
+import { createManagedInteractionContext } from "./interaction.ts";
 
 export function createCommandContext(
 	api: API,
@@ -25,11 +25,10 @@ export function createCommandContext(
 	collectorStore: CollectorStore,
 	modalCollectorStore: ModalCollectorStore,
 ): CommandContext {
-	const base = createInteractionContext(api, gateway, interaction);
+	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
 	const { options } = parseOptions(interaction);
 
-	return {
-		...base,
+	return Object.assign(Object.create(base), {
 		interaction,
 		options,
 
@@ -44,5 +43,5 @@ export function createCommandContext(
 		collectComponents(opts: CollectComponentsOptions): ComponentCollector {
 			return collectComponents(collectorStore, opts);
 		},
-	};
+	}) as CommandContext;
 }

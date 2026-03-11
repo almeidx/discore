@@ -19,7 +19,7 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 	const collected: ComponentInteractionContext[] = [];
 	const buffer: ComponentInteractionContext[] = [];
 	let stopped = false;
-	let pending: DeferredPromise<IteratorResult<ComponentInteractionContext>> | null = null;
+	const pending: DeferredPromise<IteratorResult<ComponentInteractionContext>>[] = [];
 
 	function end(reason: "timeout" | "max" | "manual"): void {
 		if (stopped) return;
@@ -27,10 +27,10 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 		clearTimeout(timer);
 		store.unregister(collector);
 		options.onEnd?.(collected, reason);
-		if (pending) {
-			pending.resolve({ value: undefined, done: true });
-			pending = null;
+		for (const deferredResult of pending) {
+			deferredResult.resolve({ value: undefined, done: true });
 		}
+		pending.length = 0;
 	}
 
 	const timer = setTimeout(() => end("timeout"), options.timeout);
@@ -40,9 +40,9 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 		handle(ctx: ComponentInteractionContext) {
 			collected.push(ctx);
 
-			if (pending) {
-				pending.resolve({ value: ctx, done: false });
-				pending = null;
+			const nextPending = pending.shift();
+			if (nextPending) {
+				nextPending.resolve({ value: ctx, done: false });
 			} else {
 				buffer.push(ctx);
 			}
@@ -67,8 +67,9 @@ export function collectComponents(store: CollectorStore, options: CollectCompone
 			if (stopped) {
 				return Promise.resolve({ value: undefined, done: true });
 			}
-			pending = deferred<IteratorResult<ComponentInteractionContext>>();
-			return pending.promise;
+			const deferredResult = deferred<IteratorResult<ComponentInteractionContext>>();
+			pending.push(deferredResult);
+			return deferredResult.promise;
 		},
 
 		return(): Promise<IteratorResult<ComponentInteractionContext>> {

@@ -19,7 +19,7 @@ function matchCustomId(pattern: string | RegExp, customId: string): Record<strin
 	if (typeof pattern === "string") {
 		return pattern === customId ? {} : null;
 	}
-	const match = pattern.exec(customId);
+	const match = new RegExp(pattern.source, pattern.flags).exec(customId);
 	return match ? (match.groups ?? {}) : null;
 }
 
@@ -44,7 +44,7 @@ export function createComponentRouter(
 		await ctx.reply(data);
 	}
 
-	async function runHandler<TContext extends InteractionContext>(
+	async function runHandler<TContext extends AnyInteractionContext & InteractionContext>(
 		api: API,
 		ctx: TContext,
 		handler: () => void | Promise<void>,

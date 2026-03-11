@@ -43,32 +43,32 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 
 	return {
 		async dispatch(event, data, api, gateway, shardId) {
-			const handlers = handlerMap.get(event);
-			if (!handlers) return;
+			const handlers = [...(handlerMap.get(event) ?? [])];
+			if (handlers.length === 0) return;
 
-			const onceHandlers: EventDefinition[] = [];
+			const errors: unknown[] = [];
 
-			const results = await Promise.allSettled(
-				handlers.map(async (def) => {
-					const ctx = createEventContext(api, gateway, data, shardId);
-					try {
-						await def.handler(ctx);
-						if (def.once) onceHandlers.push(def);
-					} catch (error) {
-						if (hooks.onEventError) {
+			for (const def of handlers) {
+				if (def.once) {
+					removeFromMap(def);
+				}
+
+				const ctx = createEventContext(api, gateway, data, shardId);
+				try {
+					await def.handler(ctx);
+				} catch (error) {
+					if (hooks.onEventError) {
+						try {
 							await hooks.onEventError(ctx, error);
-						} else {
-							throw error;
+						} catch (hookError) {
+							errors.push(hookError);
 						}
+					} else {
+						errors.push(error);
 					}
-				}),
-			);
-
-			for (const def of onceHandlers) {
-				removeFromMap(def);
+				}
 			}
 
-			const errors = results.filter((r) => r.status === "rejected").map((r) => (r as PromiseRejectedResult).reason);
 			if (errors.length === 1) {
 				throw errors[0];
 			} else if (errors.length > 1) {

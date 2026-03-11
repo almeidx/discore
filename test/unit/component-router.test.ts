@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 import { createComponentRouter } from "../../src/routing/component-router.ts";
-import type { ButtonContext, InteractionContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
+import type { ButtonContext, SelectMenuContext, ModalContext } from "../../src/types/contexts.ts";
 import {
 	DefinitionType,
 	type ButtonDefinition,
@@ -35,6 +35,17 @@ describe("createComponentRouter", () => {
 		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("other:123"));
 
 		assert.strictEqual(handler.mock.callCount(), 0);
+	});
+
+	it("does not retain RegExp lastIndex across matches", async () => {
+		const handler = mock.fn<(ctx: ButtonContext) => Promise<void>>(async () => {});
+		const buttons: ButtonDefinition[] = [{ type: DefinitionType.Button, customId: /^verify:\d+$/g, handler }];
+
+		const router = createComponentRouter(buttons, [], [], {}, undefined);
+		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
+		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
+
+		assert.strictEqual(handler.mock.callCount(), 2);
 	});
 
 	it("matches select menu and provides values", async () => {
@@ -89,7 +100,7 @@ describe("createComponentRouter", () => {
 	});
 
 	it("calls onError hook when button handler throws", async () => {
-		const onError = mock.fn<(ctx: InteractionContext, error: unknown) => Promise<false>>(async () => false);
+		const onError = mock.fn(async () => false);
 		const buttons: ButtonDefinition[] = [
 			{
 				type: DefinitionType.Button,
@@ -104,7 +115,7 @@ describe("createComponentRouter", () => {
 		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("fail"));
 
 		assert.strictEqual(onError.mock.callCount(), 1);
-		const args = onError.mock.calls[0]!.arguments;
+		const args = onError.mock.calls[0]!.arguments as unknown[];
 		assert.strictEqual((args[1] as Error).message, "button failed");
 	});
 
@@ -146,7 +157,7 @@ describe("createComponentRouter", () => {
 	});
 
 	it("calls onError hook when modal handler throws", async () => {
-		const onError = mock.fn<(ctx: InteractionContext, error: unknown) => Promise<false>>(async () => false);
+		const onError = mock.fn(async () => false);
 		const modals: ModalDefinition[] = [
 			{
 				type: DefinitionType.Modal,

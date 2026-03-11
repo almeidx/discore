@@ -5,6 +5,8 @@ export function createMockAPI() {
 		interactions: {
 			reply: mock.fn(async () => undefined),
 			defer: mock.fn(async () => undefined),
+			updateMessage: mock.fn(async () => undefined),
+			deferMessageUpdate: mock.fn(async () => undefined),
 			followUp: mock.fn(async () => ({
 				id: "1",
 				channel_id: "1",
@@ -22,6 +24,23 @@ export function createMockAPI() {
 				type: 0,
 			})),
 			editReply: mock.fn(async () => ({
+				id: "1",
+				channel_id: "1",
+				author: {},
+				content: "",
+				timestamp: "",
+				edited_timestamp: null,
+				tts: false,
+				mention_everyone: false,
+				mentions: [],
+				mention_roles: [],
+				attachments: [],
+				embeds: [],
+				pinned: false,
+				type: 0,
+			})),
+			deleteReply: mock.fn(async () => undefined),
+			getOriginalReply: mock.fn(async () => ({
 				id: "1",
 				channel_id: "1",
 				author: {},

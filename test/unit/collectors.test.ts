@@ -118,4 +118,26 @@ describe("collectComponents", () => {
 		assert.strictEqual(done.done, true);
 		assert.strictEqual(endReason, "manual");
 	});
+
+	it("supports multiple pending next calls without hanging", async () => {
+		const store = createCollectorStore();
+		const collector = collectComponents(store, {
+			filter: () => true,
+			timeout: 5000,
+		});
+
+		const first = collector.next();
+		const second = collector.next();
+
+		store.dispatch(fakeButtonCtx("btn1"));
+		store.dispatch(fakeButtonCtx("btn2"));
+
+		const firstResult = await first;
+		const secondResult = await second;
+
+		assert.strictEqual(firstResult.done, false);
+		assert.strictEqual(firstResult.value.customId, "btn1");
+		assert.strictEqual(secondResult.done, false);
+		assert.strictEqual(secondResult.value.customId, "btn2");
+	});
 });

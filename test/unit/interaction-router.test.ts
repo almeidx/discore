@@ -5,7 +5,7 @@ import { createModalCollectorStore } from "../../src/collectors/modal-collector-
 import { createComponentRouter } from "../../src/routing/component-router.ts";
 import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
 import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
-import { chatInputInteraction } from "../fixtures/interactions.ts";
+import { autocompleteInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("createInteractionRouter", () => {
@@ -274,6 +274,36 @@ describe("createInteractionRouter", () => {
 		assert.strictEqual(globalOnMissing.mock.callCount(), 1);
 	});
 
+	it("runs global and command missing-permission hooks in order", async () => {
+		const order: string[] = [];
+		const cmd: CommandDefinition = {
+			type: DefinitionType.Command,
+			data: { name: "ban", description: "Ban a user", options: [] },
+			requiredBotPermissions: 4n,
+			hooks: {
+				onMissingBotPermissions: async () => {
+					order.push("command");
+				},
+			},
+			handler: async () => {},
+		};
+
+		const { api, gateway, router } = setup([cmd], {
+			hooks: {
+				onMissingBotPermissions: async () => {
+					order.push("global");
+				},
+			},
+		});
+		const interaction = chatInputInteraction("ban");
+		interaction.app_permissions = "0";
+
+		await router.handle(api, gateway, interaction);
+
+		assert.deepStrictEqual(order, ["global", "command"]);
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
+	});
+
 	it("reports only missing permissions, not all required ones", async () => {
 		let receivedMissing: bigint | undefined;
 		const cmd: CommandDefinition = {
@@ -378,5 +408,40 @@ describe("createInteractionRouter", () => {
 		await router.handle(api, gateway, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 1);
+	});
+
+	it("routes autocomplete errors through the global error hook and responds with empty choices", async () => {
+		const onError = mock.fn(async () => {});
+		const api = createMockAPI();
+		const router = createInteractionRouter({
+			commands: new Map(),
+			commandGroups: new Map(),
+			userCommands: new Map(),
+			messageCommands: new Map(),
+			autocompletes: [
+				{
+					type: DefinitionType.Autocomplete,
+					command: "search",
+					option: "query",
+					handler: async () => {
+						throw new Error("boom");
+					},
+				},
+			],
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
+			collectorStore: createCollectorStore(),
+			modalCollectorStore: createModalCollectorStore(),
+			hooks: { onError },
+			errorResponse: undefined,
+			missingPermissionsResponse: undefined,
+		});
+
+		await router.handle(api, {} as any, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
+
+		assert.strictEqual(onError.mock.callCount(), 1);
+		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 1);
+		assert.deepStrictEqual(api.interactions.createAutocompleteResponse.mock.calls[0]!.arguments[2], {
+			choices: [],
+		});
 	});
 });

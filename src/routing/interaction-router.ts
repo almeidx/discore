@@ -17,7 +17,7 @@ import {
 } from "discord-api-types/v10";
 import type { CollectorStore } from "../collectors/collector-store.ts";
 import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
-import { createAutocompleteContext } from "../context/autocomplete.ts";
+import { createManagedAutocompleteContext } from "../context/autocomplete.ts";
 import { createButtonContext } from "../context/button.ts";
 import { createCommandContext } from "../context/command.ts";
 import { createMessageCommandContext } from "../context/message-command.ts";
@@ -108,15 +108,30 @@ export function createInteractionRouter(config: {
 		const missing = requiredPerms & ~granted;
 		if (!missing) return true;
 
-		if (commandHooks?.onMissingBotPermissions) {
-			return (await commandHooks.onMissingBotPermissions(ctx, missing)) === true;
+		let bypass = false;
+		let handledByHook = false;
+
+		if (hooks.onMissingBotPermissions) {
+			handledByHook = true;
+			if ((await hooks.onMissingBotPermissions(ctx, missing)) === true) {
+				bypass = true;
+			}
 		}
 		if (groupHooks?.onMissingBotPermissions) {
-			return (await groupHooks.onMissingBotPermissions(ctx, missing)) === true;
+			handledByHook = true;
+			if ((await groupHooks.onMissingBotPermissions(ctx, missing)) === true) {
+				bypass = true;
+			}
 		}
-		if (hooks.onMissingBotPermissions) {
-			return (await hooks.onMissingBotPermissions(ctx, missing)) === true;
+		if (commandHooks?.onMissingBotPermissions) {
+			handledByHook = true;
+			if ((await commandHooks.onMissingBotPermissions(ctx, missing)) === true) {
+				bypass = true;
+			}
 		}
+
+		if (bypass) return true;
+		if (handledByHook) return false;
 
 		if (missingPermissionsResponse !== undefined && missingPermissionsResponse !== null) {
 			const data =
@@ -174,6 +189,8 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
+		let handlerRan = false;
+
 		try {
 			if (hooks.beforeCommand) {
 				const result = await hooks.beforeCommand(ctx);
@@ -188,6 +205,7 @@ export function createInteractionRouter(config: {
 				if (result === false) return;
 			}
 
+			handlerRan = true;
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
@@ -207,9 +225,11 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			await def.hooks?.afterCommand?.(ctx);
-			await groupHooks?.afterCommand?.(ctx);
-			await hooks.afterCommand?.(ctx);
+			if (handlerRan) {
+				await def.hooks?.afterCommand?.(ctx);
+				await groupHooks?.afterCommand?.(ctx);
+				await hooks.afterCommand?.(ctx);
+			}
 			await runAfterInteraction(ctx);
 		}
 	}
@@ -237,6 +257,8 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
+		let handlerRan = false;
+
 		try {
 			if (hooks.beforeCommand) {
 				const result = await hooks.beforeCommand(ctx);
@@ -247,6 +269,7 @@ export function createInteractionRouter(config: {
 				if (result === false) return;
 			}
 
+			handlerRan = true;
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
@@ -262,8 +285,10 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			await def.hooks?.afterCommand?.(ctx);
-			await hooks.afterCommand?.(ctx);
+			if (handlerRan) {
+				await def.hooks?.afterCommand?.(ctx);
+				await hooks.afterCommand?.(ctx);
+			}
 			await runAfterInteraction(ctx);
 		}
 	}
@@ -291,6 +316,8 @@ export function createInteractionRouter(config: {
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
+		let handlerRan = false;
+
 		try {
 			if (hooks.beforeCommand) {
 				const result = await hooks.beforeCommand(ctx);
@@ -301,6 +328,7 @@ export function createInteractionRouter(config: {
 				if (result === false) return;
 			}
 
+			handlerRan = true;
 			await def.handler(ctx);
 		} catch (error) {
 			let suppressed = false;
@@ -316,8 +344,10 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			await def.hooks?.afterCommand?.(ctx);
-			await hooks.afterCommand?.(ctx);
+			if (handlerRan) {
+				await def.hooks?.afterCommand?.(ctx);
+				await hooks.afterCommand?.(ctx);
+			}
 			await runAfterInteraction(ctx);
 		}
 	}
@@ -327,14 +357,25 @@ export function createInteractionRouter(config: {
 		gateway: WebSocketManager,
 		interaction: APIApplicationCommandAutocompleteInteraction,
 	): Promise<void> {
-		const ctx = createAutocompleteContext(api, gateway, interaction);
+		const { context: ctx, hasResponded } = createManagedAutocompleteContext(api, gateway, interaction);
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
 		try {
 			for (const def of autocompletes) {
 				if (matchesAutocomplete(def, ctx) && def.option === ctx.focused.name) {
-					await def.handler(ctx);
+					try {
+						await def.handler(ctx);
+					} catch (error) {
+						let suppressed = false;
+						if (hooks.onError) {
+							const result = await hooks.onError(ctx, error);
+							if (result === false) suppressed = true;
+						}
+						if (!suppressed && !hasResponded()) {
+							await ctx.respond([]);
+						}
+					}
 					return;
 				}
 			}

@@ -63,6 +63,34 @@ describe("createEventRouter", () => {
 		assert.deepStrictEqual(order, [0, 5, 10]);
 	});
 
+	it("awaits handlers sequentially by priority", async () => {
+		const order: string[] = [];
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				handler: async () => {
+					await new Promise((resolve) => setTimeout(resolve, 10));
+					order.push("low");
+				},
+			},
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 10,
+				handler: async () => {
+					order.push("high");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, {});
+		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0);
+
+		assert.deepStrictEqual(order, ["low", "high"]);
+	});
+
 	it("calls onEventError when handler throws", async () => {
 		const onEventError = mock.fn(async () => {});
 		const events: EventDefinition[] = [
@@ -143,5 +171,27 @@ describe("createEventRouter", () => {
 		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0);
 
 		assert.strictEqual(secondHandler.mock.callCount(), 1);
+	});
+
+	it("removes once handlers even when onEventError handles a thrown error", async () => {
+		let calls = 0;
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				once: true,
+				handler: async () => {
+					calls += 1;
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, { onEventError: async () => {} });
+		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0);
+		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0);
+
+		assert.strictEqual(calls, 1);
 	});
 });

@@ -7,14 +7,20 @@ import type {
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import type { AutocompleteContext } from "../types/contexts.ts";
 
-export function createAutocompleteContext(
+export interface ManagedAutocompleteContext {
+	context: AutocompleteContext;
+	hasResponded(): boolean;
+}
+
+export function createManagedAutocompleteContext(
 	api: API,
 	gateway: WebSocketManager,
 	interaction: APIApplicationCommandAutocompleteInteraction,
-): AutocompleteContext {
+): ManagedAutocompleteContext {
 	const { focused, options, subcommand, subcommandGroup } = parseAutocompleteOptions(interaction);
+	let responded = false;
 
-	return {
+	const context: AutocompleteContext = {
 		api,
 		gateway,
 		interaction,
@@ -27,8 +33,24 @@ export function createAutocompleteContext(
 			await api.interactions.createAutocompleteResponse(interaction.id, interaction.token, {
 				choices,
 			});
+			responded = true;
 		},
 	};
+
+	return {
+		context,
+		hasResponded() {
+			return responded;
+		},
+	};
+}
+
+export function createAutocompleteContext(
+	api: API,
+	gateway: WebSocketManager,
+	interaction: APIApplicationCommandAutocompleteInteraction,
+): AutocompleteContext {
+	return createManagedAutocompleteContext(api, gateway, interaction).context;
 }
 
 interface AutocompleteParseResult {

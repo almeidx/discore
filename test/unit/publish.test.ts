@@ -5,7 +5,9 @@ import { defineCommandGroup } from "../../src/definitions/command-group.ts";
 import { defineCommand } from "../../src/definitions/command.ts";
 import { defineMessageCommand } from "../../src/definitions/message-command.ts";
 import { defineUserCommand } from "../../src/definitions/user-command.ts";
+import { publishCommands } from "../../src/publish.ts";
 import type { CommandDefinition, SubcommandGroup } from "../../src/types/definitions.ts";
+import { createMockREST } from "../fixtures/mock-api.ts";
 
 describe("publishCommands", () => {
 	it("command definitions produce correct meta", () => {
@@ -97,5 +99,22 @@ describe("publishCommands", () => {
 		const sg = group.subcommands[1] as SubcommandGroup;
 		assert.strictEqual(sg.name, "role");
 		assert.strictEqual(sg.subcommands.length, 2);
+	});
+
+	it("publishes command payloads through the REST client", async () => {
+		const rest = createMockREST();
+		rest.get.mock.mockImplementation(async () => ({ id: "app-id" }));
+		rest.put.mock.mockImplementation(async (_route: string, init: { body: unknown }) => init.body);
+
+		const cmd = defineCommand({
+			data: { name: "ping", description: "Pong!" },
+			handler: async () => {},
+		});
+
+		const result = await publishCommands({ rest, commands: [cmd] });
+
+		assert.strictEqual(rest.get.mock.callCount(), 1);
+		assert.strictEqual(rest.put.mock.callCount(), 1);
+		assert.deepStrictEqual(result, [{ name: "ping", description: "Pong!", options: [], type: 1 }]);
 	});
 });

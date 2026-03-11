@@ -48,10 +48,10 @@ createBot({
 	events: [ready],
 	hooks: {
 		beforeCommand: async () => {
-			console.log("[global] before — skipped for commands with their own hooks");
+			console.log("[global] before handler");
 		},
 		afterCommand: async () => {
-			console.log("[global] after — skipped for commands with their own hooks");
+			console.log("[global] after handler");
 		},
 		onError: async (_ctx, error) => {
 			console.error("Unhandled error:", error);

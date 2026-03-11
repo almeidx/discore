@@ -67,6 +67,25 @@ describe("hooks", () => {
 		assert.strictEqual(handler.mock.callCount(), 0);
 	});
 
+	it("afterCommand does not run when beforeCommand cancels execution", async () => {
+		const afterCommand = mock.fn(async () => {});
+
+		const cmd: CommandDefinition = {
+			type: DefinitionType.Command,
+			data: { name: "test", description: "test", options: [] },
+			hooks: {
+				beforeCommand: async () => false,
+				afterCommand,
+			},
+			handler: async () => {},
+		};
+
+		const router = createRouter(cmd);
+		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+
+		assert.strictEqual(afterCommand.mock.callCount(), 0);
+	});
+
 	it("afterCommand runs even when handler throws", async () => {
 		const afterCommand = mock.fn(async () => {});
 

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { createCollectorStore } from "../../src/collectors/collector-store.ts";
+import { createModalCollectorStore } from "../../src/collectors/modal-collector-store.ts";
+import { createButtonContext } from "../../src/context/button.ts";
+import { createCommandContext } from "../../src/context/command.ts";
 import { createInteractionContext } from "../../src/context/interaction.ts";
-import { chatInputInteraction } from "../fixtures/interactions.ts";
+import { buttonInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
 describe("createInteractionContext", () => {
@@ -52,5 +56,49 @@ describe("createInteractionContext", () => {
 
 		assert.strictEqual(ctx.replied, true);
 		assert.strictEqual(api.interactions.createModal.mock.callCount(), 1);
+	});
+
+	it("preserves live reply state in derived command contexts", async () => {
+		const api = createMockAPI();
+		const ctx = createCommandContext(
+			api,
+			{} as any,
+			chatInputInteraction("test"),
+			createCollectorStore(),
+			createModalCollectorStore(),
+		);
+
+		await ctx.reply({ content: "hello" });
+		assert.strictEqual(ctx.replied, true);
+
+		await ctx.reply({ content: "again" });
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
+		assert.strictEqual(api.interactions.followUp.mock.callCount(), 1);
+	});
+
+	it("marks component contexts as acknowledged after update", async () => {
+		const api = createMockAPI();
+		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+
+		await ctx.update({ content: "updated" });
+
+		assert.strictEqual(ctx.replied, true);
+		assert.strictEqual(ctx.deferred, false);
+		assert.strictEqual(api.interactions.updateMessage.mock.callCount(), 1);
+
+		await ctx.reply({ content: "follow-up" });
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
+		assert.strictEqual(api.interactions.followUp.mock.callCount(), 1);
+	});
+
+	it("marks component contexts as deferred after deferUpdate", async () => {
+		const api = createMockAPI();
+		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+
+		await ctx.deferUpdate();
+
+		assert.strictEqual(ctx.replied, true);
+		assert.strictEqual(ctx.deferred, true);
+		assert.strictEqual(api.interactions.deferMessageUpdate.mock.callCount(), 1);
 	});
 });

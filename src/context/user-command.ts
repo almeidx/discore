@@ -15,7 +15,7 @@ import type {
 	ComponentCollector,
 } from "../types/contexts.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
-import { createInteractionContext } from "./interaction.ts";
+import { createManagedInteractionContext } from "./interaction.ts";
 
 export function createUserCommandContext(
 	api: API,
@@ -24,13 +24,12 @@ export function createUserCommandContext(
 	collectorStore: CollectorStore,
 	modalCollectorStore: ModalCollectorStore,
 ): UserCommandContext {
-	const base = createInteractionContext(api, gateway, interaction);
+	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
 	const targetId = interaction.data.target_id;
 	const targetUser = interaction.data.resolved.users[targetId]!;
 	const targetMember = interaction.data.resolved.members?.[targetId];
 
-	return {
-		...base,
+	return Object.assign(Object.create(base), {
 		interaction,
 		targetUser,
 		targetMember,
@@ -46,5 +45,5 @@ export function createUserCommandContext(
 		collectComponents(opts: CollectComponentsOptions): ComponentCollector {
 			return collectComponents(collectorStore, opts);
 		},
-	};
+	}) as UserCommandContext;
 }

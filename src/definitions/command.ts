@@ -31,7 +31,7 @@ export interface DefineCommandConfig<TOptions extends readonly APIApplicationCom
  *     ],
  *   },
  *   handler: async (ctx) => {
- *     ctx.options.user; // string (Snowflake)
+ *     ctx.options.user.user.id; // string (Snowflake)
  *   },
  * });
  * ```

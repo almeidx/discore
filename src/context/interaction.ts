@@ -10,15 +10,36 @@ import type { WebSocketManager } from "@discordjs/ws";
 import type { APIInteraction, APIMessage } from "discord-api-types/v10";
 import type { InteractionContext } from "../types/contexts.ts";
 
-export function createInteractionContext(
+interface InteractionStateController {
+	markReplied(): void;
+	markDeferred(): void;
+}
+
+export interface ManagedInteractionContext {
+	context: InteractionContext;
+	controller: InteractionStateController;
+}
+
+export function createManagedInteractionContext(
 	api: API,
 	gateway: WebSocketManager,
 	interaction: APIInteraction,
-): InteractionContext {
+): ManagedInteractionContext {
 	let replied = false;
 	let deferred = false;
 
-	return {
+	const controller: InteractionStateController = {
+		markReplied() {
+			replied = true;
+		},
+
+		markDeferred() {
+			deferred = true;
+			replied = true;
+		},
+	};
+
+	const context: InteractionContext = {
 		api,
 		gateway,
 		interaction,
@@ -37,13 +58,12 @@ export function createInteractionContext(
 				return;
 			}
 			await api.interactions.reply(interaction.id, interaction.token, data);
-			replied = true;
+			controller.markReplied();
 		},
 
 		async defer(data?: CreateInteractionDeferResponseOptions): Promise<void> {
 			await api.interactions.defer(interaction.id, interaction.token, data);
-			deferred = true;
-			replied = true;
+			controller.markDeferred();
 		},
 
 		async followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage> {
@@ -64,7 +84,17 @@ export function createInteractionContext(
 
 		async showModal(data: CreateModalResponseOptions): Promise<void> {
 			await api.interactions.createModal(interaction.id, interaction.token, data);
-			replied = true;
+			controller.markReplied();
 		},
 	};
+
+	return { context, controller };
+}
+
+export function createInteractionContext(
+	api: API,
+	gateway: WebSocketManager,
+	interaction: APIInteraction,
+): InteractionContext {
+	return createManagedInteractionContext(api, gateway, interaction).context;
 }

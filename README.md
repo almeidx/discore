@@ -14,7 +14,7 @@ A lightweight, functional Discord bot framework built on [`@discordjs/core`](htt
 ## Requirements
 
 - Node.js >= 24.0.0
-- `@discordjs/core` >= 2.0.0
+- `@discordjs/core` >= 3.0.0-dev
 
 ## Install
 
@@ -50,7 +50,7 @@ const gateway = new WebSocketManager({
 });
 
 createBot({ rest, gateway, commands: [ping] });
-await publishCommands({ token, commands: [ping] });
+await publishCommands({ rest, commands: [ping] });
 await gateway.connect();
 ```
 
@@ -70,9 +70,9 @@ const ban = defineCommand({
 		],
 	},
 	handler: async (ctx) => {
-		// ctx.options.user: string (required — always present)
+		// ctx.options.user: { user, member } (required — always present)
 		// ctx.options.reason: string | undefined (optional)
-		await ctx.reply({ content: `Banned <@${ctx.options.user}>` });
+		await ctx.reply({ content: `Banned <@${ctx.options.user.user.id}>` });
 	},
 });
 ```
