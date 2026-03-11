@@ -39,6 +39,7 @@ export type CommandGroupData = Omit<RESTPostAPIChatInputApplicationCommandsJSONB
 export interface CommandDefinition {
 	type: typeof DefinitionType.Command;
 	data: CommandData;
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	handler: (ctx: CommandContext) => void | Promise<void>;
 }
@@ -46,6 +47,7 @@ export interface CommandDefinition {
 export interface CommandGroupDefinition {
 	type: typeof DefinitionType.CommandGroup;
 	data: CommandGroupData;
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	subcommands: (CommandDefinition | SubcommandGroup)[];
 }
@@ -91,6 +93,7 @@ export type ContextMenuCommandData = Omit<RESTPostAPIContextMenuApplicationComma
 export interface UserCommandDefinition {
 	type: typeof DefinitionType.UserCommand;
 	data: ContextMenuCommandData;
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	handler: (ctx: UserCommandContext) => void | Promise<void>;
 }
@@ -98,6 +101,7 @@ export interface UserCommandDefinition {
 export interface MessageCommandDefinition {
 	type: typeof DefinitionType.MessageCommand;
 	data: ContextMenuCommandData;
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	handler: (ctx: MessageCommandContext) => void | Promise<void>;
 }

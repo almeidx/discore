@@ -9,6 +9,7 @@ import type { InferOptions } from "../types/options.ts";
 
 export interface DefineCommandConfig<TOptions extends readonly APIApplicationCommandBasicOption[] = readonly []> {
 	data: Omit<RESTPostAPIChatInputApplicationCommandsJSONBody, "type" | "options"> & { options?: TOptions };
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	handler: (ctx: CommandContext<InferOptions<TOptions>>) => void | Promise<void>;
 }
@@ -44,6 +45,7 @@ export function defineCommand<const TOptions extends readonly APIApplicationComm
 			...config.data,
 			options: config.data.options ?? [],
 		},
+		requiredBotPermissions: config.requiredBotPermissions,
 		hooks: config.hooks,
 		handler: config.handler as CommandDefinition["handler"],
 	};

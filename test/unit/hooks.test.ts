@@ -21,6 +21,7 @@ describe("hooks", () => {
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: globalHooks,
 			errorResponse: undefined,
+			missingPermissionsResponse: undefined,
 		});
 	}
 

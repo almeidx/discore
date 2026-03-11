@@ -7,7 +7,12 @@ import { createModalCollectorStore } from "./collectors/modal-collector-store.ts
 import { createComponentRouter } from "./routing/component-router.ts";
 import { createEventRouter } from "./routing/event-router.ts";
 import { createInteractionRouter } from "./routing/interaction-router.ts";
-import type { InteractionContext } from "./types/contexts.ts";
+import type {
+	InteractionContext,
+	CommandContext,
+	UserCommandContext,
+	MessageCommandContext,
+} from "./types/contexts.ts";
 import {
 	DefinitionType,
 	type AnyCommandDefinition,
@@ -35,6 +40,13 @@ export interface CreateBotOptions {
 	errorResponse?:
 		| CreateInteractionResponseOptions
 		| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
+		| null;
+	missingPermissionsResponse?:
+		| CreateInteractionResponseOptions
+		| ((
+				ctx: CommandContext | UserCommandContext | MessageCommandContext,
+				missing: bigint,
+		  ) => CreateInteractionResponseOptions)
 		| null;
 }
 
@@ -127,6 +139,7 @@ export function createBot(options: CreateBotOptions): Bot {
 		modalCollectorStore,
 		hooks: options.hooks ?? {},
 		errorResponse: options.errorResponse,
+		missingPermissionsResponse: options.missingPermissionsResponse,
 	});
 
 	const listener = async (payload: GatewayDispatchPayload, shardId: number) => {

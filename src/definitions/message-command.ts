@@ -4,6 +4,7 @@ import type { CommandHooks } from "../types/hooks.ts";
 
 export interface DefineMessageCommandConfig {
 	data: ContextMenuCommandData;
+	requiredBotPermissions?: bigint;
 	hooks?: CommandHooks;
 	handler: (ctx: MessageCommandContext) => void | Promise<void>;
 }
@@ -12,6 +13,7 @@ export function defineMessageCommand(config: DefineMessageCommandConfig): Messag
 	return {
 		type: DefinitionType.MessageCommand,
 		data: config.data,
+		requiredBotPermissions: config.requiredBotPermissions,
 		hooks: config.hooks,
 		handler: config.handler,
 	};

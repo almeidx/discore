@@ -36,6 +36,7 @@ describe("context menu commands", () => {
 			modalCollectorStore: createModalCollectorStore(),
 			hooks: {},
 			errorResponse: undefined,
+			missingPermissionsResponse: undefined,
 		});
 
 		return { api, gateway, router };

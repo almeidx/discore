@@ -39,6 +39,8 @@ export interface CommandHooks {
 	afterCommand?: (ctx: AnyCommandContext) => Promise<void> | void;
 	/** Runs when the handler throws. Return `false` to suppress the default error response. */
 	onError?: (ctx: AnyCommandContext, error: unknown) => Promise<boolean | void> | boolean | void;
+	/** Runs when the bot is missing required permissions. Return `true` to bypass and run the command anyway. */
+	onMissingBotPermissions?: (ctx: AnyCommandContext, missing: bigint) => Promise<boolean | void> | boolean | void;
 }
 
 /**
@@ -54,4 +56,6 @@ export interface GlobalHooks {
 	beforeInteraction?: (ctx: AnyInteractionContext) => Promise<boolean | void> | boolean | void;
 	/** Runs after any interaction handler completes. */
 	afterInteraction?: (ctx: AnyInteractionContext) => Promise<void> | void;
+	/** Runs when the bot is missing required permissions. Return `true` to bypass and run the command anyway. */
+	onMissingBotPermissions?: (ctx: AnyCommandContext, missing: bigint) => Promise<boolean | void> | boolean | void;
 }

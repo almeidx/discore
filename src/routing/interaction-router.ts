@@ -34,13 +34,19 @@ import type {
 	MessageCommandDefinition,
 	SubcommandGroup,
 } from "../types/definitions.ts";
-import type { GlobalHooks, AnyInteractionContext, CommandHooks } from "../types/hooks.ts";
+import type { GlobalHooks, AnyInteractionContext, AnyCommandContext, CommandHooks } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { ComponentRouter } from "./component-router.ts";
 
 export type ErrorResponseOption =
 	| CreateInteractionResponseOptions
 	| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
+	| null
+	| undefined;
+
+export type MissingPermissionsResponseOption =
+	| CreateInteractionResponseOptions
+	| ((ctx: AnyCommandContext, missing: bigint) => CreateInteractionResponseOptions)
 	| null
 	| undefined;
 
@@ -59,6 +65,7 @@ export function createInteractionRouter(config: {
 	modalCollectorStore: ModalCollectorStore;
 	hooks: GlobalHooks;
 	errorResponse: ErrorResponseOption;
+	missingPermissionsResponse: MissingPermissionsResponseOption;
 }): InteractionRouter {
 	const {
 		commands,
@@ -71,6 +78,7 @@ export function createInteractionRouter(config: {
 		modalCollectorStore,
 		hooks,
 		errorResponse,
+		missingPermissionsResponse,
 	} = config;
 
 	const defaultErrorResponse: CreateInteractionResponseOptions = {
@@ -89,6 +97,43 @@ export function createInteractionRouter(config: {
 		} catch {
 			// exhausted response methods
 		}
+	}
+
+	async function checkBotPermissions(
+		ctx: AnyCommandContext,
+		requiredPerms: bigint,
+		appPermissions: string | undefined,
+		commandHooks: CommandHooks | undefined,
+		groupHooks: CommandHooks | undefined,
+	): Promise<boolean> {
+		if (!requiredPerms || appPermissions === undefined) return true;
+
+		const granted = BigInt(appPermissions);
+		const missing = requiredPerms & ~granted;
+		if (!missing) return true;
+
+		if (commandHooks?.onMissingBotPermissions) {
+			return (await commandHooks.onMissingBotPermissions(ctx, missing)) === true;
+		}
+		if (groupHooks?.onMissingBotPermissions) {
+			return (await groupHooks.onMissingBotPermissions(ctx, missing)) === true;
+		}
+		if (hooks.onMissingBotPermissions) {
+			return (await hooks.onMissingBotPermissions(ctx, missing)) === true;
+		}
+
+		if (missingPermissionsResponse !== undefined && missingPermissionsResponse !== null) {
+			const data =
+				typeof missingPermissionsResponse === "function"
+					? missingPermissionsResponse(ctx, missing)
+					: missingPermissionsResponse;
+			try {
+				await ctx.reply(data);
+			} catch {
+				// exhausted response methods
+			}
+		}
+		return false;
 	}
 
 	async function runBeforeInteraction(ctx: AnyInteractionContext): Promise<boolean> {
@@ -135,6 +180,9 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+
+		const requiredPerms = (group?.requiredBotPermissions ?? 0n) | (def.requiredBotPermissions ?? 0n);
+		if (!(await checkBotPermissions(ctx, requiredPerms, interaction.app_permissions, def.hooks, groupHooks))) return;
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
@@ -206,6 +254,17 @@ export function createInteractionRouter(config: {
 
 		const ctx = createUserCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
 
+		if (
+			!(await checkBotPermissions(
+				ctx,
+				def.requiredBotPermissions ?? 0n,
+				interaction.app_permissions,
+				def.hooks,
+				undefined,
+			))
+		)
+			return;
+
 		if (!(await runBeforeInteraction(ctx))) return;
 
 		try {
@@ -260,6 +319,17 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createMessageCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+
+		if (
+			!(await checkBotPermissions(
+				ctx,
+				def.requiredBotPermissions ?? 0n,
+				interaction.app_permissions,
+				def.hooks,
+				undefined,
+			))
+		)
+			return;
 
 		if (!(await runBeforeInteraction(ctx))) return;
 
