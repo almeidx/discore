@@ -41,11 +41,7 @@ export function createComponentRouter(
 
 		const data = typeof response === "function" ? response(ctx, error) : response;
 
-		try {
-			await ctx.reply(data);
-		} catch {
-			// exhausted response methods
-		}
+		await ctx.reply(data);
 	}
 
 	async function runHandler<TContext extends InteractionContext>(
@@ -80,11 +76,7 @@ export function createComponentRouter(
 
 	async function runAfterInteraction(ctx: AnyInteractionContext): Promise<void> {
 		if (!hooks.afterInteraction) return;
-		try {
-			await hooks.afterInteraction(ctx);
-		} catch {
-			// afterInteraction errors are swallowed
-		}
+		await hooks.afterInteraction(ctx);
 	}
 
 	return {

@@ -92,11 +92,7 @@ export function createInteractionRouter(config: {
 
 		const data = typeof response === "function" ? response(ctx, error) : response;
 
-		try {
-			await ctx.reply(data);
-		} catch {
-			// exhausted response methods
-		}
+		await ctx.reply(data);
 	}
 
 	async function checkBotPermissions(
@@ -127,11 +123,7 @@ export function createInteractionRouter(config: {
 				typeof missingPermissionsResponse === "function"
 					? missingPermissionsResponse(ctx, missing)
 					: missingPermissionsResponse;
-			try {
-				await ctx.reply(data);
-			} catch {
-				// exhausted response methods
-			}
+			await ctx.reply(data);
 		}
 		return false;
 	}
@@ -144,11 +136,7 @@ export function createInteractionRouter(config: {
 
 	async function runAfterInteraction(ctx: AnyInteractionContext): Promise<void> {
 		if (!hooks.afterInteraction) return;
-		try {
-			await hooks.afterInteraction(ctx);
-		} catch {
-			// afterInteraction errors are swallowed
-		}
+		await hooks.afterInteraction(ctx);
 	}
 
 	async function handleCommand(
@@ -219,27 +207,9 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (def.hooks?.afterCommand) {
-				try {
-					await def.hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
-			if (groupHooks?.afterCommand) {
-				try {
-					await groupHooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
-			if (hooks.afterCommand) {
-				try {
-					await hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
+			await def.hooks?.afterCommand?.(ctx);
+			await groupHooks?.afterCommand?.(ctx);
+			await hooks.afterCommand?.(ctx);
 			await runAfterInteraction(ctx);
 		}
 	}
@@ -292,20 +262,8 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (def.hooks?.afterCommand) {
-				try {
-					await def.hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
-			if (hooks.afterCommand) {
-				try {
-					await hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
+			await def.hooks?.afterCommand?.(ctx);
+			await hooks.afterCommand?.(ctx);
 			await runAfterInteraction(ctx);
 		}
 	}
@@ -358,20 +316,8 @@ export function createInteractionRouter(config: {
 				await sendErrorResponse(api, ctx, error);
 			}
 		} finally {
-			if (def.hooks?.afterCommand) {
-				try {
-					await def.hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
-			if (hooks.afterCommand) {
-				try {
-					await hooks.afterCommand(ctx);
-				} catch {
-					// afterCommand errors are swallowed
-				}
-			}
+			await def.hooks?.afterCommand?.(ctx);
+			await hooks.afterCommand?.(ctx);
 			await runAfterInteraction(ctx);
 		}
 	}

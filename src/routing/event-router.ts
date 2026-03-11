@@ -48,7 +48,7 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 
 			const onceHandlers: EventDefinition[] = [];
 
-			await Promise.allSettled(
+			const results = await Promise.allSettled(
 				handlers.map(async (def) => {
 					const ctx = createEventContext(api, gateway, data, shardId);
 					try {
@@ -57,6 +57,8 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 					} catch (error) {
 						if (hooks.onEventError) {
 							await hooks.onEventError(ctx, error);
+						} else {
+							throw error;
 						}
 					}
 				}),
@@ -64,6 +66,13 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 
 			for (const def of onceHandlers) {
 				removeFromMap(def);
+			}
+
+			const errors = results.filter((r) => r.status === "rejected").map((r) => (r as PromiseRejectedResult).reason);
+			if (errors.length === 1) {
+				throw errors[0];
+			} else if (errors.length > 1) {
+				throw new AggregateError(errors, "Multiple event handlers failed");
 			}
 		},
 

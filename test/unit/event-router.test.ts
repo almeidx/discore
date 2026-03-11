@@ -101,6 +101,25 @@ describe("createEventRouter", () => {
 		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0));
 	});
 
+	it("propagates error when onEventError is not set", async () => {
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, {});
+
+		await assert.rejects(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), {} as any, 0), {
+			message: "boom",
+		});
+	});
+
 	it("continues to next handler when one throws", async () => {
 		const secondHandler = mock.fn(async () => {});
 		const events: EventDefinition[] = [
