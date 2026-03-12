@@ -1,9 +1,8 @@
-import type { ModalContext } from "../types/contexts.ts";
-import type { AwaitModalOptions } from "../types/contexts.ts";
+import type { AwaitModalOptions, ModalContext } from "../types/contexts.ts";
+import type { CollectorStore } from "./collector-store.ts";
 import { CollectorTimeoutError } from "./errors.ts";
-import type { ModalCollectorStore } from "./modal-collector-store.ts";
 
-export function awaitModal(store: ModalCollectorStore, options: AwaitModalOptions): Promise<ModalContext> {
+export function awaitModal(store: CollectorStore<ModalContext>, options: AwaitModalOptions): Promise<ModalContext> {
 	return new Promise<ModalContext>((resolve, reject) => {
 		const timer = setTimeout(() => {
 			store.unregister(collector);

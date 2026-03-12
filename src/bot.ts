@@ -1,18 +1,13 @@
-import { API, type CreateInteractionResponseOptions } from "@discordjs/core";
+import { API } from "@discordjs/core";
 import type { REST } from "@discordjs/rest";
 import { WebSocketShardEvents, type WebSocketManager } from "@discordjs/ws";
 import { GatewayDispatchEvents, type GatewayDispatchPayload } from "discord-api-types/v10";
 import { createCollectorStore } from "./collectors/collector-store.ts";
-import { createModalCollectorStore } from "./collectors/modal-collector-store.ts";
 import { createComponentRouter } from "./routing/component-router.ts";
 import { createEventRouter } from "./routing/event-router.ts";
 import { createInteractionRouter } from "./routing/interaction-router.ts";
-import type {
-	InteractionContext,
-	CommandContext,
-	UserCommandContext,
-	MessageCommandContext,
-} from "./types/contexts.ts";
+import type { ErrorResponseOption, MissingPermissionsResponseOption } from "./types/bot-options.ts";
+import type { ModalContext } from "./types/contexts.ts";
 import {
 	DefinitionType,
 	type AnyCommandDefinition,
@@ -28,6 +23,7 @@ import {
 	type AutocompleteDefinition,
 } from "./types/definitions.ts";
 import type { GlobalHooks } from "./types/hooks.ts";
+import type { ComponentInteractionContext } from "./types/internal.ts";
 
 /** Configuration for {@link createBot}. */
 export interface CreateBotOptions {
@@ -37,17 +33,8 @@ export interface CreateBotOptions {
 	events?: EventDefinition[];
 	interactions?: InteractionDefinition[];
 	hooks?: GlobalHooks;
-	errorResponse?:
-		| CreateInteractionResponseOptions
-		| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
-		| null;
-	missingPermissionsResponse?:
-		| CreateInteractionResponseOptions
-		| ((
-				ctx: CommandContext | UserCommandContext | MessageCommandContext,
-				missing: bigint,
-		  ) => CreateInteractionResponseOptions)
-		| null;
+	errorResponse?: Exclude<ErrorResponseOption, undefined>;
+	missingPermissionsResponse?: Exclude<MissingPermissionsResponseOption, undefined>;
 }
 
 export interface Bot {
@@ -118,16 +105,11 @@ export function createBot(options: CreateBotOptions): Bot {
 		}
 	}
 
-	const collectorStore = createCollectorStore();
-	const modalCollectorStore = createModalCollectorStore();
-	const componentRouter = createComponentRouter(
-		buttons,
-		selectMenus,
-		modals,
-		options.hooks ?? {},
-		options.errorResponse,
-	);
-	const eventRouter = createEventRouter(options.events ?? [], options.hooks ?? {});
+	const hooks = options.hooks ?? {};
+	const collectorStore = createCollectorStore<ComponentInteractionContext>();
+	const modalCollectorStore = createCollectorStore<ModalContext>();
+	const componentRouter = createComponentRouter(buttons, selectMenus, modals, hooks, options.errorResponse);
+	const eventRouter = createEventRouter(options.events ?? [], hooks);
 	const interactionRouter = createInteractionRouter({
 		commands: commandMap,
 		commandGroups: commandGroupMap,
@@ -137,7 +119,7 @@ export function createBot(options: CreateBotOptions): Bot {
 		componentRouter,
 		collectorStore,
 		modalCollectorStore,
-		hooks: options.hooks ?? {},
+		hooks,
 		errorResponse: options.errorResponse,
 		missingPermissionsResponse: options.missingPermissionsResponse,
 	});

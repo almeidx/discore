@@ -56,6 +56,7 @@ export type { DefineAutocompleteConfig } from "./definitions/autocomplete.ts";
 export { defineUserCommand } from "./definitions/user-command.ts";
 export { defineMessageCommand } from "./definitions/message-command.ts";
 
+export type { ErrorResponseOption, MissingPermissionsResponseOption } from "./types/bot-options.ts";
 export { createBot } from "./bot.ts";
 export type { CreateBotOptions, Bot } from "./bot.ts";
 export { publishCommands } from "./publish.ts";

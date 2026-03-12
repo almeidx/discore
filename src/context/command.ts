@@ -5,7 +5,6 @@ import { awaitComponent } from "../collectors/await-component.ts";
 import { awaitModal } from "../collectors/await-modal.ts";
 import { collectComponents } from "../collectors/collect-components.ts";
 import type { CollectorStore } from "../collectors/collector-store.ts";
-import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
 import { parseOptions } from "../options-parser.ts";
 import type {
 	CommandContext,
@@ -22,13 +21,13 @@ export function createCommandContext(
 	api: API,
 	gateway: WebSocketManager,
 	interaction: APIChatInputApplicationCommandInteraction,
-	collectorStore: CollectorStore,
-	modalCollectorStore: ModalCollectorStore,
+	collectorStore: CollectorStore<ComponentInteractionContext>,
+	modalCollectorStore: CollectorStore<ModalContext>,
 ): CommandContext {
 	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
 	const { options } = parseOptions(interaction);
 
-	return Object.assign(Object.create(base), {
+	return Object.assign(base, {
 		interaction,
 		options,
 

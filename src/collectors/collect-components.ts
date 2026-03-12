@@ -2,6 +2,8 @@ import type { CollectComponentsOptions, ComponentCollector } from "../types/cont
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { CollectorStore } from "./collector-store.ts";
 
+type ComponentCollectorStore = CollectorStore<ComponentInteractionContext>;
+
 interface DeferredPromise<T> {
 	resolve: (value: T) => void;
 	promise: Promise<T>;
@@ -15,7 +17,10 @@ function deferred<T>(): DeferredPromise<T> {
 	return { resolve, promise };
 }
 
-export function collectComponents(store: CollectorStore, options: CollectComponentsOptions): ComponentCollector {
+export function collectComponents(
+	store: ComponentCollectorStore,
+	options: CollectComponentsOptions,
+): ComponentCollector {
 	const collected: ComponentInteractionContext[] = [];
 	const buffer: ComponentInteractionContext[] = [];
 	let stopped = false;

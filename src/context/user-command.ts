@@ -5,7 +5,6 @@ import { awaitComponent } from "../collectors/await-component.ts";
 import { awaitModal } from "../collectors/await-modal.ts";
 import { collectComponents } from "../collectors/collect-components.ts";
 import type { CollectorStore } from "../collectors/collector-store.ts";
-import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
 import type {
 	UserCommandContext,
 	ModalContext,
@@ -21,15 +20,15 @@ export function createUserCommandContext(
 	api: API,
 	gateway: WebSocketManager,
 	interaction: APIUserApplicationCommandInteraction,
-	collectorStore: CollectorStore,
-	modalCollectorStore: ModalCollectorStore,
+	collectorStore: CollectorStore<ComponentInteractionContext>,
+	modalCollectorStore: CollectorStore<ModalContext>,
 ): UserCommandContext {
 	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
 	const targetId = interaction.data.target_id;
 	const targetUser = interaction.data.resolved.users[targetId]!;
 	const targetMember = interaction.data.resolved.members?.[targetId];
 
-	return Object.assign(Object.create(base), {
+	return Object.assign(base, {
 		interaction,
 		targetUser,
 		targetMember,

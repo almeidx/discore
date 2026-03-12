@@ -1,5 +1,4 @@
-import { API } from "@discordjs/core";
-import type { REST } from "@discordjs/rest";
+import type { API } from "@discordjs/core";
 import {
 	ApplicationCommandOptionType,
 	ApplicationCommandType,
@@ -18,7 +17,8 @@ import {
 } from "./types/definitions.ts";
 
 export interface PublishCommandsOptions {
-	rest: REST;
+	api: API;
+	applicationId: string;
 	commands: AnyCommandDefinition[];
 	guildId?: string;
 }
@@ -94,16 +94,11 @@ function toPayload(cmd: AnyCommandDefinition): CommandPayload {
 }
 
 export async function publishCommands(options: PublishCommandsOptions): Promise<APIApplicationCommand[]> {
-	const api = new API(options.rest);
-
 	const payloads = options.commands.map(toPayload);
 
-	const appInfo = await api.applications.getCurrent();
-	const applicationId = appInfo.id;
-
 	if (options.guildId) {
-		return api.applicationCommands.bulkOverwriteGuildCommands(applicationId, options.guildId, payloads);
+		return options.api.applicationCommands.bulkOverwriteGuildCommands(options.applicationId, options.guildId, payloads);
 	}
 
-	return api.applicationCommands.bulkOverwriteGlobalCommands(applicationId, payloads);
+	return options.api.applicationCommands.bulkOverwriteGlobalCommands(options.applicationId, payloads);
 }

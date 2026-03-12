@@ -4,7 +4,7 @@ import type { CollectorStore } from "./collector-store.ts";
 import { CollectorTimeoutError } from "./errors.ts";
 
 export function awaitComponent(
-	store: CollectorStore,
+	store: CollectorStore<ComponentInteractionContext>,
 	options: AwaitComponentOptions,
 ): Promise<ComponentInteractionContext> {
 	return new Promise<ComponentInteractionContext>((resolve, reject) => {

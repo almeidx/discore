@@ -43,8 +43,9 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 
 	return {
 		async dispatch(event, data, api, gateway, shardId) {
-			const handlers = [...(handlerMap.get(event) ?? [])];
-			if (handlers.length === 0) return;
+			const registered = handlerMap.get(event);
+			if (!registered || registered.length === 0) return;
+			const handlers = [...registered];
 
 			const errors: unknown[] = [];
 

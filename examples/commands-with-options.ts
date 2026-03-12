@@ -73,10 +73,14 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({ rest, gateway, commands: [ban, userinfo], events: [ready] });
+const bot = createBot({ rest, gateway, commands: [ban, userinfo], events: [ready] });
 
 console.log("Publishing commands...");
-const published = await publishCommands({ rest, commands: [ban, userinfo] });
+const published = await publishCommands({
+	api: bot.api,
+	applicationId: process.env.DISCORD_APP_ID!,
+	commands: [ban, userinfo],
+});
 console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");

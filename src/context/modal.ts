@@ -13,7 +13,7 @@ export function createModalContext(
 ): ModalContext {
 	const { context: base, controller } = createManagedInteractionContext(api, gateway, interaction);
 
-	return Object.assign(Object.create(base), {
+	return Object.assign(base, {
 		interaction,
 		customId: interaction.data.custom_id,
 		params,

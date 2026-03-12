@@ -1,5 +1,4 @@
 import type { API } from "@discordjs/core";
-import type { CreateInteractionResponseOptions } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import {
 	InteractionType,
@@ -12,11 +11,9 @@ import {
 	type APIMessageComponentInteraction,
 	type APIModalSubmitInteraction,
 	type APIApplicationCommandAutocompleteInteraction,
-	MessageFlags,
 	ComponentType,
 } from "discord-api-types/v10";
 import type { CollectorStore } from "../collectors/collector-store.ts";
-import type { ModalCollectorStore } from "../collectors/modal-collector-store.ts";
 import { createManagedAutocompleteContext } from "../context/autocomplete.ts";
 import { createButtonContext } from "../context/button.ts";
 import { createCommandContext } from "../context/command.ts";
@@ -25,7 +22,8 @@ import { createModalContext } from "../context/modal.ts";
 import { createSelectMenuContext } from "../context/select-menu.ts";
 import { createUserCommandContext } from "../context/user-command.ts";
 import { parseOptions } from "../options-parser.ts";
-import type { InteractionContext } from "../types/contexts.ts";
+import type { MissingPermissionsResponseOption } from "../types/bot-options.ts";
+import type { InteractionContext, ModalContext } from "../types/contexts.ts";
 import type {
 	CommandDefinition,
 	CommandGroupDefinition,
@@ -34,21 +32,11 @@ import type {
 	MessageCommandDefinition,
 	SubcommandGroup,
 } from "../types/definitions.ts";
-import type { GlobalHooks, AnyInteractionContext, AnyCommandContext, CommandHooks } from "../types/hooks.ts";
+import type { GlobalHooks, AnyCommandContext, CommandHooks } from "../types/hooks.ts";
 import type { ComponentInteractionContext } from "../types/internal.ts";
 import type { ComponentRouter } from "./component-router.ts";
-
-export type ErrorResponseOption =
-	| CreateInteractionResponseOptions
-	| ((ctx: InteractionContext, error: unknown) => CreateInteractionResponseOptions)
-	| null
-	| undefined;
-
-export type MissingPermissionsResponseOption =
-	| CreateInteractionResponseOptions
-	| ((ctx: AnyCommandContext, missing: bigint) => CreateInteractionResponseOptions)
-	| null
-	| undefined;
+import { sendErrorResponse, runBeforeInteraction, runAfterInteraction, type ErrorResponseOption } from "./shared.ts";
+export type { MissingPermissionsResponseOption } from "../types/bot-options.ts";
 
 export interface InteractionRouter {
 	handle(api: API, gateway: WebSocketManager, interaction: APIInteraction): Promise<void>;
@@ -61,8 +49,8 @@ export function createInteractionRouter(config: {
 	messageCommands: Map<string, MessageCommandDefinition>;
 	autocompletes: AutocompleteDefinition[];
 	componentRouter: ComponentRouter;
-	collectorStore: CollectorStore;
-	modalCollectorStore: ModalCollectorStore;
+	collectorStore: CollectorStore<ComponentInteractionContext>;
+	modalCollectorStore: CollectorStore<ModalContext>;
 	hooks: GlobalHooks;
 	errorResponse: ErrorResponseOption;
 	missingPermissionsResponse: MissingPermissionsResponseOption;
@@ -80,20 +68,6 @@ export function createInteractionRouter(config: {
 		errorResponse,
 		missingPermissionsResponse,
 	} = config;
-
-	const defaultErrorResponse: CreateInteractionResponseOptions = {
-		content: "Something went wrong.",
-		flags: MessageFlags.Ephemeral,
-	};
-
-	async function sendErrorResponse(api: API, ctx: InteractionContext, error: unknown): Promise<void> {
-		const response = errorResponse === undefined ? defaultErrorResponse : errorResponse;
-		if (response === null) return;
-
-		const data = typeof response === "function" ? response(ctx, error) : response;
-
-		await ctx.reply(data);
-	}
 
 	async function checkBotPermissions(
 		ctx: AnyCommandContext,
@@ -143,15 +117,42 @@ export function createInteractionRouter(config: {
 		return false;
 	}
 
-	async function runBeforeInteraction(ctx: AnyInteractionContext): Promise<boolean> {
-		if (!hooks.beforeInteraction) return true;
-		const result = await hooks.beforeInteraction(ctx);
-		return result !== false;
-	}
+	async function runCommandPipeline(
+		ctx: AnyCommandContext & InteractionContext,
+		handler: () => void | Promise<void>,
+		requiredPerms: bigint,
+		appPermissions: string | undefined,
+		commandHooks?: CommandHooks,
+		groupHooks?: CommandHooks,
+	): Promise<void> {
+		if (!(await checkBotPermissions(ctx, requiredPerms, appPermissions, commandHooks, groupHooks))) return;
+		if (!(await runBeforeInteraction(hooks, ctx))) return;
 
-	async function runAfterInteraction(ctx: AnyInteractionContext): Promise<void> {
-		if (!hooks.afterInteraction) return;
-		await hooks.afterInteraction(ctx);
+		let handlerRan = false;
+
+		try {
+			if (hooks.beforeCommand && (await hooks.beforeCommand(ctx)) === false) return;
+			if (groupHooks?.beforeCommand && (await groupHooks.beforeCommand(ctx)) === false) return;
+			if (commandHooks?.beforeCommand && (await commandHooks.beforeCommand(ctx)) === false) return;
+
+			handlerRan = true;
+			await handler();
+		} catch (error) {
+			let suppressed = false;
+			if (commandHooks?.onError && (await commandHooks.onError(ctx, error)) === false) suppressed = true;
+			if (!suppressed && groupHooks?.onError && (await groupHooks.onError(ctx, error)) === false) suppressed = true;
+			if (!suppressed && hooks.onError && (await hooks.onError(ctx, error)) === false) suppressed = true;
+			if (!suppressed) {
+				await sendErrorResponse(errorResponse, ctx, error);
+			}
+		} finally {
+			if (handlerRan) {
+				await commandHooks?.afterCommand?.(ctx);
+				await groupHooks?.afterCommand?.(ctx);
+				await hooks.afterCommand?.(ctx);
+			}
+			await runAfterInteraction(hooks, ctx);
+		}
 	}
 
 	async function handleCommand(
@@ -183,55 +184,15 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
-
 		const requiredPerms = (group?.requiredBotPermissions ?? 0n) | (def.requiredBotPermissions ?? 0n);
-		if (!(await checkBotPermissions(ctx, requiredPerms, interaction.app_permissions, def.hooks, groupHooks))) return;
-
-		if (!(await runBeforeInteraction(ctx))) return;
-
-		let handlerRan = false;
-
-		try {
-			if (hooks.beforeCommand) {
-				const result = await hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-			if (groupHooks?.beforeCommand) {
-				const result = await groupHooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-			if (def.hooks?.beforeCommand) {
-				const result = await def.hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-
-			handlerRan = true;
-			await def.handler(ctx);
-		} catch (error) {
-			let suppressed = false;
-			if (def.hooks?.onError) {
-				const result = await def.hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed && groupHooks?.onError) {
-				const result = await groupHooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed && hooks.onError) {
-				const result = await hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed) {
-				await sendErrorResponse(api, ctx, error);
-			}
-		} finally {
-			if (handlerRan) {
-				await def.hooks?.afterCommand?.(ctx);
-				await groupHooks?.afterCommand?.(ctx);
-				await hooks.afterCommand?.(ctx);
-			}
-			await runAfterInteraction(ctx);
-		}
+		await runCommandPipeline(
+			ctx,
+			() => def.handler(ctx),
+			requiredPerms,
+			interaction.app_permissions,
+			def.hooks,
+			groupHooks,
+		);
 	}
 
 	async function handleUserCommand(
@@ -243,54 +204,13 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createUserCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
-
-		if (
-			!(await checkBotPermissions(
-				ctx,
-				def.requiredBotPermissions ?? 0n,
-				interaction.app_permissions,
-				def.hooks,
-				undefined,
-			))
-		)
-			return;
-
-		if (!(await runBeforeInteraction(ctx))) return;
-
-		let handlerRan = false;
-
-		try {
-			if (hooks.beforeCommand) {
-				const result = await hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-			if (def.hooks?.beforeCommand) {
-				const result = await def.hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-
-			handlerRan = true;
-			await def.handler(ctx);
-		} catch (error) {
-			let suppressed = false;
-			if (def.hooks?.onError) {
-				const result = await def.hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed && hooks.onError) {
-				const result = await hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed) {
-				await sendErrorResponse(api, ctx, error);
-			}
-		} finally {
-			if (handlerRan) {
-				await def.hooks?.afterCommand?.(ctx);
-				await hooks.afterCommand?.(ctx);
-			}
-			await runAfterInteraction(ctx);
-		}
+		await runCommandPipeline(
+			ctx,
+			() => def.handler(ctx),
+			def.requiredBotPermissions ?? 0n,
+			interaction.app_permissions,
+			def.hooks,
+		);
 	}
 
 	async function handleMessageCommand(
@@ -302,54 +222,13 @@ export function createInteractionRouter(config: {
 		if (!def) return;
 
 		const ctx = createMessageCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
-
-		if (
-			!(await checkBotPermissions(
-				ctx,
-				def.requiredBotPermissions ?? 0n,
-				interaction.app_permissions,
-				def.hooks,
-				undefined,
-			))
-		)
-			return;
-
-		if (!(await runBeforeInteraction(ctx))) return;
-
-		let handlerRan = false;
-
-		try {
-			if (hooks.beforeCommand) {
-				const result = await hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-			if (def.hooks?.beforeCommand) {
-				const result = await def.hooks.beforeCommand(ctx);
-				if (result === false) return;
-			}
-
-			handlerRan = true;
-			await def.handler(ctx);
-		} catch (error) {
-			let suppressed = false;
-			if (def.hooks?.onError) {
-				const result = await def.hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed && hooks.onError) {
-				const result = await hooks.onError(ctx, error);
-				if (result === false) suppressed = true;
-			}
-			if (!suppressed) {
-				await sendErrorResponse(api, ctx, error);
-			}
-		} finally {
-			if (handlerRan) {
-				await def.hooks?.afterCommand?.(ctx);
-				await hooks.afterCommand?.(ctx);
-			}
-			await runAfterInteraction(ctx);
-		}
+		await runCommandPipeline(
+			ctx,
+			() => def.handler(ctx),
+			def.requiredBotPermissions ?? 0n,
+			interaction.app_permissions,
+			def.hooks,
+		);
 	}
 
 	async function handleAutocomplete(
@@ -359,7 +238,7 @@ export function createInteractionRouter(config: {
 	): Promise<void> {
 		const { context: ctx, hasResponded } = createManagedAutocompleteContext(api, gateway, interaction);
 
-		if (!(await runBeforeInteraction(ctx))) return;
+		if (!(await runBeforeInteraction(hooks, ctx))) return;
 
 		try {
 			for (const def of autocompletes) {
@@ -380,7 +259,7 @@ export function createInteractionRouter(config: {
 				}
 			}
 		} finally {
-			await runAfterInteraction(ctx);
+			await runAfterInteraction(hooks, ctx);
 		}
 	}
 

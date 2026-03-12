@@ -54,7 +54,7 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({
+const bot = createBot({
 	rest,
 	gateway,
 	commands: [ban, manage],
@@ -65,5 +65,5 @@ createBot({
 	}),
 });
 
-await publishCommands({ rest, commands: [ban, manage] });
+await publishCommands({ api: bot.api, applicationId: process.env.DISCORD_APP_ID!, commands: [ban, manage] });
 await gateway.connect();

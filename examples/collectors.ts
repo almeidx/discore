@@ -103,10 +103,10 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({ rest, gateway, commands: [confirm, poll], events: [ready] });
+const bot = createBot({ rest, gateway, commands: [confirm, poll], events: [ready] });
 
 console.log("Publishing commands...");
-await publishCommands({ rest, commands: [confirm, poll] });
+await publishCommands({ api: bot.api, applicationId: process.env.DISCORD_APP_ID!, commands: [confirm, poll] });
 
 console.log("Connecting to gateway...");
 await gateway.connect();

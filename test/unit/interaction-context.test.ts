@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
-import { createModalCollectorStore } from "../../src/collectors/modal-collector-store.ts";
 import { createButtonContext } from "../../src/context/button.ts";
 import { createCommandContext } from "../../src/context/command.ts";
 import { createInteractionContext } from "../../src/context/interaction.ts";
+import type { ModalContext } from "../../src/types/contexts.ts";
+import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { buttonInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
@@ -64,8 +65,8 @@ describe("createInteractionContext", () => {
 			api,
 			{} as any,
 			chatInputInteraction("test"),
-			createCollectorStore(),
-			createModalCollectorStore(),
+			createCollectorStore<ComponentInteractionContext>(),
+			createCollectorStore<ModalContext>(),
 		);
 
 		await ctx.reply({ content: "hello" });

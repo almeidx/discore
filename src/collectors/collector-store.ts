@@ -1,29 +1,27 @@
-import type { ComponentInteractionContext } from "../types/internal.ts";
-
-export interface ActiveCollector {
-	filter: (ctx: ComponentInteractionContext) => boolean;
-	handle: (ctx: ComponentInteractionContext) => void;
+export interface ActiveCollector<T> {
+	filter: (ctx: T) => boolean;
+	handle: (ctx: T) => void;
 }
 
-export interface CollectorStore {
-	register(collector: ActiveCollector): void;
-	unregister(collector: ActiveCollector): void;
-	dispatch(ctx: ComponentInteractionContext): boolean;
+export interface CollectorStore<T> {
+	register(collector: ActiveCollector<T>): void;
+	unregister(collector: ActiveCollector<T>): void;
+	dispatch(ctx: T): boolean;
 }
 
-export function createCollectorStore(): CollectorStore {
-	const collectors = new Set<ActiveCollector>();
+export function createCollectorStore<T>(): CollectorStore<T> {
+	const collectors = new Set<ActiveCollector<T>>();
 
 	return {
-		register(collector: ActiveCollector): void {
+		register(collector: ActiveCollector<T>): void {
 			collectors.add(collector);
 		},
 
-		unregister(collector: ActiveCollector): void {
+		unregister(collector: ActiveCollector<T>): void {
 			collectors.delete(collector);
 		},
 
-		dispatch(ctx: ComponentInteractionContext): boolean {
+		dispatch(ctx: T): boolean {
 			let handled = false;
 			for (const collector of collectors) {
 				if (collector.filter(ctx)) {

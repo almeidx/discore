@@ -5,6 +5,7 @@ import { collectComponents } from "../../src/collectors/collect-components.ts";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { CollectorTimeoutError } from "../../src/collectors/errors.ts";
 import { createButtonContext } from "../../src/context/button.ts";
+import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { buttonInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
@@ -14,7 +15,7 @@ function fakeButtonCtx(customId: string) {
 
 describe("collector-store", () => {
 	it("dispatches to matching collector", () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		let received = false;
 
 		store.register({
@@ -32,7 +33,7 @@ describe("collector-store", () => {
 	});
 
 	it("returns false when no collector matches", () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		store.register({
 			filter: () => false,
 			handle: () => {},
@@ -45,7 +46,7 @@ describe("collector-store", () => {
 
 describe("awaitComponent", () => {
 	it("resolves when a matching component arrives", async () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		const promise = awaitComponent(store, {
 			filter: (ctx) => ctx.customId === "confirm",
 			timeout: 5000,
@@ -59,7 +60,7 @@ describe("awaitComponent", () => {
 	});
 
 	it("rejects on timeout", async () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		const promise = awaitComponent(store, {
 			filter: () => true,
 			timeout: 50,
@@ -71,7 +72,7 @@ describe("awaitComponent", () => {
 
 describe("collectComponents", () => {
 	it("yields matching components and stops on max", async () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		let endReason: string | undefined;
 
 		const collector = collectComponents(store, {
@@ -96,7 +97,7 @@ describe("collectComponents", () => {
 	});
 
 	it("stops manually", async () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		let endReason: string | undefined;
 
 		const collector = collectComponents(store, {
@@ -120,7 +121,7 @@ describe("collectComponents", () => {
 	});
 
 	it("supports multiple pending next calls without hanging", async () => {
-		const store = createCollectorStore();
+		const store = createCollectorStore<ComponentInteractionContext>();
 		const collector = collectComponents(store, {
 			filter: () => true,
 			timeout: 5000,

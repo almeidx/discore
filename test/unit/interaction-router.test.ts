@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
-import { createModalCollectorStore } from "../../src/collectors/modal-collector-store.ts";
 import { createComponentRouter } from "../../src/routing/component-router.ts";
 import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
+import type { ModalContext } from "../../src/types/contexts.ts";
 import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
+import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { autocompleteInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
@@ -12,7 +13,7 @@ describe("createInteractionRouter", () => {
 	function setup(commands: CommandDefinition[] = [], overrides: Record<string, unknown> = {}) {
 		const api = createMockAPI();
 		const gateway = {} as any;
-		const collectorStore = createCollectorStore();
+		const collectorStore = createCollectorStore<ComponentInteractionContext>();
 		const componentRouter = createComponentRouter([], [], [], {}, undefined);
 
 		const commandMap = new Map<string, CommandDefinition>();
@@ -28,7 +29,7 @@ describe("createInteractionRouter", () => {
 			autocompletes: [],
 			componentRouter,
 			collectorStore,
-			modalCollectorStore: createModalCollectorStore(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: {},
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,
@@ -113,8 +114,8 @@ describe("createInteractionRouter", () => {
 			messageCommands: new Map(),
 			autocompletes: [],
 			componentRouter: createComponentRouter([], [], [], {}, undefined),
-			collectorStore: createCollectorStore(),
-			modalCollectorStore: createModalCollectorStore(),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: {},
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,
@@ -146,8 +147,8 @@ describe("createInteractionRouter", () => {
 			messageCommands: new Map(),
 			autocompletes: [],
 			componentRouter: createComponentRouter([], [], [], {}, undefined),
-			collectorStore: createCollectorStore(),
-			modalCollectorStore: createModalCollectorStore(),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: {},
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,
@@ -258,8 +259,8 @@ describe("createInteractionRouter", () => {
 			messageCommands: new Map(),
 			autocompletes: [],
 			componentRouter: createComponentRouter([], [], [], {}, undefined),
-			collectorStore: createCollectorStore(),
-			modalCollectorStore: createModalCollectorStore(),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: { onMissingBotPermissions: globalOnMissing },
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,
@@ -429,8 +430,8 @@ describe("createInteractionRouter", () => {
 				},
 			],
 			componentRouter: createComponentRouter([], [], [], {}, undefined),
-			collectorStore: createCollectorStore(),
-			modalCollectorStore: createModalCollectorStore(),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: { onError },
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
-import { createModalCollectorStore } from "../../src/collectors/modal-collector-store.ts";
 import { createComponentRouter } from "../../src/routing/component-router.ts";
 import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
+import type { ModalContext } from "../../src/types/contexts.ts";
 import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
+import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
@@ -17,8 +18,8 @@ describe("hooks", () => {
 			messageCommands: new Map(),
 			autocompletes: [],
 			componentRouter: createComponentRouter([], [], [], {}, undefined),
-			collectorStore: createCollectorStore(),
-			modalCollectorStore: createModalCollectorStore(),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
 			hooks: globalHooks,
 			errorResponse: undefined,
 			missingPermissionsResponse: undefined,
