@@ -1,0 +1,138 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: release-prepare
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare Release PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        run: npm version ${{ inputs.bump }} --no-git-tag-version
+
+      - name: Get new version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v$VERSION"
+          BRANCH="release/$TAG"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TODAY=$(date +%Y-%m-%d)
+
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "Generating changelog from $PREVIOUS_TAG to HEAD"
+            COMMITS=$(git log --pretty=format:"- %s" "$PREVIOUS_TAG"..HEAD --no-merges | grep -v "^- chore: release" || true)
+          else
+            echo "No previous tag found, generating full changelog"
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges | grep -v "^- chore: release" || true)
+          fi
+
+          {
+            echo "## [$VERSION] - $TODAY"
+            echo ""
+            if [ -n "$COMMITS" ]; then
+              echo "$COMMITS"
+            else
+              echo "- Initial release"
+            fi
+            echo ""
+          } > new_section.txt
+
+          cat new_section.txt
+
+      - name: Update CHANGELOG.md
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            head -n 4 CHANGELOG.md > CHANGELOG.new.md
+            echo "" >> CHANGELOG.new.md
+            cat new_section.txt >> CHANGELOG.new.md
+            tail -n +5 CHANGELOG.md >> CHANGELOG.new.md
+            mv CHANGELOG.new.md CHANGELOG.md
+          else
+            {
+              echo "# Changelog"
+              echo ""
+              echo "All notable changes to this project will be documented in this file."
+              echo ""
+              cat new_section.txt
+            } > CHANGELOG.md
+          fi
+
+          rm new_section.txt
+          cat CHANGELOG.md
+
+      - name: Create release branch and push
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          BRANCH="${{ steps.version.outputs.branch }}"
+
+          git checkout -b "$BRANCH"
+          git add package.json pnpm-lock.yaml CHANGELOG.md
+          git commit -m "chore: release $TAG"
+          git push --force origin "$BRANCH"
+
+      - name: Create PR
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh pr create \
+            --title "Release $TAG" \
+            --body "## Release $TAG
+
+          This PR prepares the release of version $VERSION.
+
+          ### Changes
+          - Updated version in package.json to $VERSION
+          - Updated CHANGELOG.md with changes since last release
+
+          ### After Merge
+          When this PR is merged, the release workflow will automatically publish to npm and create the GitHub Release." \
+            --label "release" \
+            --base main
