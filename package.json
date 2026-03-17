@@ -40,6 +40,7 @@
 		"prepare": "husky .github/husky"
 	},
 	"devDependencies": {
+		"@discordjs/collection": "3.0.0-dev.1773446773-2a067216c",
 		"@discordjs/core": "3.0.0-dev.1773446773-2a067216c",
 		"@discordjs/rest": "3.0.0-dev.1773446773-2a067216c",
 		"@discordjs/ws": "3.0.0-dev.1773446773-2a067216c",

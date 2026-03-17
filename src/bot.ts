@@ -1,3 +1,4 @@
+import { Collection } from "@discordjs/collection";
 import { API } from "@discordjs/core";
 import type { REST } from "@discordjs/rest";
 import { WebSocketShardEvents, type WebSocketManager } from "@discordjs/ws";
@@ -40,10 +41,12 @@ export interface CreateBotOptions {
 export interface Bot {
 	api: API;
 	gateway: WebSocketManager;
-	commands: Map<string, CommandDefinition>;
-	commandGroups: Map<string, CommandGroupDefinition>;
-	userCommands: Map<string, UserCommandDefinition>;
-	messageCommands: Map<string, MessageCommandDefinition>;
+	/** Average heartbeat latency across all shards in milliseconds, or `undefined` if no heartbeats have been received yet. */
+	readonly ping: number | undefined;
+	commands: Collection<string, CommandDefinition>;
+	commandGroups: Collection<string, CommandGroupDefinition>;
+	userCommands: Collection<string, UserCommandDefinition>;
+	messageCommands: Collection<string, MessageCommandDefinition>;
 	addCommand(cmd: AnyCommandDefinition): void;
 	removeCommand(name: string): boolean;
 	addEvent(event: EventDefinition): void;
@@ -61,10 +64,10 @@ export function createBot(options: CreateBotOptions): Bot {
 	const api = new API(options.rest);
 	const { gateway } = options;
 
-	const commandMap = new Map<string, CommandDefinition>();
-	const commandGroupMap = new Map<string, CommandGroupDefinition>();
-	const userCommandMap = new Map<string, UserCommandDefinition>();
-	const messageCommandMap = new Map<string, MessageCommandDefinition>();
+	const commandMap = new Collection<string, CommandDefinition>();
+	const commandGroupMap = new Collection<string, CommandGroupDefinition>();
+	const userCommandMap = new Collection<string, UserCommandDefinition>();
+	const messageCommandMap = new Collection<string, MessageCommandDefinition>();
 
 	for (const cmd of options.commands ?? []) {
 		switch (cmd.type) {
@@ -124,19 +127,30 @@ export function createBot(options: CreateBotOptions): Bot {
 		missingPermissionsResponse: options.missingPermissionsResponse,
 	});
 
-	const listener = async (payload: GatewayDispatchPayload, shardId: number) => {
+	async function dispatchListener(payload: GatewayDispatchPayload, shardId: number) {
 		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
 			await interactionRouter.handle(api, gateway, payload.d);
 		}
 
 		await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);
-	};
+	}
 
-	gateway.on(WebSocketShardEvents.Dispatch, listener);
+	const pings = new Collection<number, number>();
+
+	function heartbeatCompleteListener({ latency }: { latency: number }, shardId: number) {
+		pings.set(shardId, latency);
+	}
+
+	gateway.on(WebSocketShardEvents.HeartbeatComplete, heartbeatCompleteListener);
+	gateway.on(WebSocketShardEvents.Dispatch, dispatchListener);
 
 	return {
 		api,
 		gateway,
+		get ping() {
+			if (!pings.size) return undefined;
+			return pings.reduce((sum, latency) => sum + latency, 0) / pings.size;
+		},
 		commands: commandMap,
 		commandGroups: commandGroupMap,
 		userCommands: userCommandMap,
@@ -216,7 +230,8 @@ export function createBot(options: CreateBotOptions): Bot {
 		},
 
 		destroy() {
-			gateway.off(WebSocketShardEvents.Dispatch, listener);
+			gateway.off(WebSocketShardEvents.HeartbeatComplete, heartbeatCompleteListener);
+			gateway.off(WebSocketShardEvents.Dispatch, dispatchListener);
 		},
 	};
 }

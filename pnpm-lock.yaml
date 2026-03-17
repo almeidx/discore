@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@discordjs/collection':
+        specifier: 3.0.0-dev.1773446773-2a067216c
+        version: 3.0.0-dev.1773446773-2a067216c
       '@discordjs/core':
         specifier: 3.0.0-dev.1773446773-2a067216c
         version: 3.0.0-dev.1773446773-2a067216c
