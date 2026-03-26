@@ -65,22 +65,27 @@ packages:
   '@discordjs/collection@3.0.0-dev.1773446773-2a067216c':
     resolution: {integrity: sha512-KDtN1L4hJVuejhnwUiqaJWOlu89SY2F3OnJv7QNNLyImS3b5KhLLO/tPwlelklpI6XG4zq0+szXBbFwcEkSrsA==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/core@3.0.0-dev.1773446773-2a067216c':
     resolution: {integrity: sha512-K1bTxaNP5pzEbdPUY8dNS/1VlYcmIIy6mXi5wwtjakWuHRUUFa3cSrOlEJp6YMQkJ2u0trYSVz/hszhOHHKZWQ==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/rest@3.0.0-dev.1773446773-2a067216c':
     resolution: {integrity: sha512-aBdUGYStZ5L9/hlRgjPc7kqLo1KjY13lUZt9cW9pYMR/8qZNLTdOgK1y/cztYgQN6DOWCD9kTYdtGxgxiKXNQw==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/util@2.0.0-dev.1773446773-2a067216c':
     resolution: {integrity: sha512-WzLkpD6Ze/jkOg+EPP9soOgVmz1zqw4abx0AazbT8FaOLaQlN8Ye3m8vDNwlAIUQnMtYCg1/O58AzLUMNg6pnQ==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/ws@3.0.0-dev.1773446773-2a067216c':
     resolution: {integrity: sha512-RPvOIWT/+ogCsaESlJwyGHGZuQupvV5rWQ0v+y66vLXZaMwJzo5z9hZC0xJNRu9sqyJVIUuAt70RfUFAy4h7ww==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@emnapi/core@1.9.1':
     resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
@@ -572,8 +577,8 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
-  picomatch@4.0.3:
-    resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
+  picomatch@4.0.4:
+    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
   quansync@1.0.0:
@@ -1021,9 +1026,9 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.8
 
-  fdir@6.5.0(picomatch@4.0.3):
+  fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
-      picomatch: 4.0.3
+      picomatch: 4.0.4
 
   get-tsconfig@4.13.6:
     dependencies:
@@ -1089,7 +1094,7 @@ snapshots:
 
   pathe@2.0.3: {}
 
-  picomatch@4.0.3: {}
+  picomatch@4.0.4: {}
 
   quansync@1.0.0: {}
 
@@ -1139,8 +1144,8 @@ snapshots:
 
   tinyglobby@0.2.15:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.3)
-      picomatch: 4.0.3
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
 
   tinypool@2.1.0: {}
 
@@ -1155,7 +1160,7 @@ snapshots:
       hookable: 6.1.0
       import-without-cache: 0.2.5
       obug: 2.1.1
-      picomatch: 4.0.3
+      picomatch: 4.0.4
       rolldown: 1.0.0-rc.9
       rolldown-plugin-dts: 0.22.5(rolldown@1.0.0-rc.9)(typescript@6.0.2)
       semver: 7.7.4
