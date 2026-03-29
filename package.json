@@ -44,15 +44,15 @@
 		"test": "node --test './test/**/*.test.ts'"
 	},
 	"devDependencies": {
-		"@discordjs/collection": "3.0.0-dev.1774570043-22b820fbf",
-		"@discordjs/core": "3.0.0-dev.1774570043-22b820fbf",
-		"@discordjs/rest": "3.0.0-dev.1774570043-22b820fbf",
-		"@discordjs/ws": "3.0.0-dev.1774570043-22b820fbf",
+		"@discordjs/collection": "3.0.0-dev.1774785853-9b7ea5a1b",
+		"@discordjs/core": "3.0.0-dev.1774785853-9b7ea5a1b",
+		"@discordjs/rest": "3.0.0-dev.1774785853-9b7ea5a1b",
+		"@discordjs/ws": "3.0.0-dev.1774785853-9b7ea5a1b",
 		"discord-api-types": "^0.38.42",
 		"husky": "^9.1.7",
 		"oxfmt": "^0.42.0",
 		"oxlint": "^1.57.0",
-		"tsdown": "^0.21.6",
+		"tsdown": "^0.21.7",
 		"typescript": "^6.0.2"
 	},
 	"peerDependencies": {
