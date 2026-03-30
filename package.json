@@ -48,7 +48,7 @@
 		"@discordjs/core": "3.0.0-dev.1774785853-9b7ea5a1b",
 		"@discordjs/rest": "3.0.0-dev.1774785853-9b7ea5a1b",
 		"@discordjs/ws": "3.0.0-dev.1774785853-9b7ea5a1b",
-		"discord-api-types": "^0.38.42",
+		"discord-api-types": "^0.38.43",
 		"husky": "^9.1.7",
 		"oxfmt": "^0.42.0",
 		"oxlint": "^1.57.0",
@@ -59,7 +59,7 @@
 		"@discordjs/collection": ">=3.0.0-dev",
 		"@discordjs/core": ">=3.0.0-dev",
 		"@discordjs/ws": ">=3.0.0-dev",
-		"discord-api-types": ">=0.38.42"
+		"discord-api-types": ">=0.38.43"
 	},
 	"engines": {
 		"node": ">=24.0.0"

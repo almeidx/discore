@@ -21,7 +21,7 @@ importers:
         specifier: 3.0.0-dev.1774785853-9b7ea5a1b
         version: 3.0.0-dev.1774785853-9b7ea5a1b
       discord-api-types:
-        specifier: ^0.38.42
+        specifier: ^0.38.43
         version: 0.38.43
       husky:
         specifier: ^9.1.7
