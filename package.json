@@ -48,18 +48,18 @@
 		"@discordjs/core": "3.0.0-dev.1776125601-58c5ebdd0",
 		"@discordjs/rest": "3.0.0-dev.1776125601-58c5ebdd0",
 		"@discordjs/ws": "3.0.0-dev.1776125601-58c5ebdd0",
-		"discord-api-types": "^0.38.45",
+		"discord-api-types": "^0.38.46",
 		"husky": "^9.1.7",
-		"oxfmt": "^0.44.0",
-		"oxlint": "^1.59.0",
-		"tsdown": "^0.21.7",
+		"oxfmt": "^0.45.0",
+		"oxlint": "^1.60.0",
+		"tsdown": "^0.21.8",
 		"typescript": "^6.0.2"
 	},
 	"peerDependencies": {
 		"@discordjs/collection": ">=3.0.0-dev",
 		"@discordjs/core": ">=3.0.0-dev",
 		"@discordjs/ws": ">=3.0.0-dev.1776125601-58c5ebdd0",
-		"discord-api-types": ">=0.38.45"
+		"discord-api-types": ">=0.38.46"
 	},
 	"engines": {
 		"node": ">=24.0.0"
