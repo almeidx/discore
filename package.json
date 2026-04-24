@@ -52,7 +52,7 @@
 		"husky": "^9.1.7",
 		"oxfmt": "^0.46.0",
 		"oxlint": "^1.61.0",
-		"tsdown": "^0.21.9",
+		"tsdown": "^0.21.10",
 		"typescript": "^6.0.3"
 	},
 	"peerDependencies": {
@@ -64,5 +64,5 @@
 	"engines": {
 		"node": ">=24.0.0"
 	},
-	"packageManager": "pnpm@10.33.0"
+	"packageManager": "pnpm@10.33.1"
 }
