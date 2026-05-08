@@ -157,6 +157,11 @@ jobs:
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
           NPM_TAG: ${{ steps.version.outputs.npm_tag }}
         run: |
+          gh label create release \
+            --description "Release preparation PRs" \
+            --color "0e8a16" \
+            --force
+
           TITLE="Release $TAG"
           if [[ "$PRERELEASE" == "true" ]]; then
             TITLE="Prerelease $TAG"
