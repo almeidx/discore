@@ -17,6 +17,8 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      npm_tag: ${{ steps.version.outputs.npm_tag }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -27,10 +29,23 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="v$VERSION"
+          PRERELEASE="false"
+          NPM_TAG="latest"
+
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE="true"
+            PRERELEASE_PART="${VERSION#*-}"
+            NPM_TAG="${PRERELEASE_PART%%.*}"
+          fi
+
           echo "Version: $VERSION"
           echo "Tag: $TAG"
+          echo "Prerelease: $PRERELEASE"
+          echo "npm tag: $NPM_TAG"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
 
   publish:
     name: Publish
@@ -85,7 +100,9 @@ jobs:
           cat release_notes.txt
 
       - name: Publish to npm
-        run: pnpm publish --no-git-checks
+        env:
+          NPM_TAG: ${{ needs.version.outputs.npm_tag }}
+        run: pnpm publish --no-git-checks --tag "$NPM_TAG"
 
       - name: Configure Git
         run: |
@@ -105,6 +122,6 @@ jobs:
           name: ${{ needs.version.outputs.tag }}
           body_path: release_notes.txt
           draft: false
-          prerelease: false
+          prerelease: ${{ needs.version.outputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

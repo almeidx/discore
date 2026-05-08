@@ -12,6 +12,15 @@ on:
           - patch
           - minor
           - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      preid:
+        description: "Prerelease identifier used for pre* bumps and the npm dist-tag"
+        required: false
+        default: "next"
+        type: string
 
 concurrency:
   group: release-prepare
@@ -45,7 +54,20 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump version
-        run: npm version ${{ inputs.bump }} --no-git-tag-version
+        env:
+          BUMP: ${{ inputs.bump }}
+          PREID: ${{ inputs.preid }}
+        run: |
+          if [[ "$BUMP" == pre* ]]; then
+            if [[ ! "$PREID" =~ ^[A-Za-z][0-9A-Za-z-]*$ ]]; then
+              echo "::error::preid must start with a letter and contain only letters, numbers, and hyphens"
+              exit 1
+            fi
+
+            npm version "$BUMP" --preid "$PREID" --no-git-tag-version
+          else
+            npm version "$BUMP" --no-git-tag-version
+          fi
 
       - name: Get new version
         id: version
@@ -53,9 +75,20 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="v$VERSION"
           BRANCH="release/$TAG"
+          PRERELEASE="false"
+          NPM_TAG="latest"
+
+          if [[ "$VERSION" == *-* ]]; then
+            PRERELEASE="true"
+            PRERELEASE_PART="${VERSION#*-}"
+            NPM_TAG="${PRERELEASE_PART%%.*}"
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
+          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
 
       - name: Generate changelog
         run: |
@@ -121,18 +154,31 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          NPM_TAG: ${{ steps.version.outputs.npm_tag }}
         run: |
-          gh pr create \
-            --title "Release $TAG" \
-            --body "## Release $TAG
+          TITLE="Release $TAG"
+          if [[ "$PRERELEASE" == "true" ]]; then
+            TITLE="Prerelease $TAG"
+          fi
 
-          This PR prepares the release of version $VERSION.
+          cat > pr_body.md <<EOF
+          ## Release $TAG
+
+          This PR prepares version $VERSION.
 
           ### Changes
           - Updated version in package.json to $VERSION
           - Updated CHANGELOG.md with changes since last release
 
           ### After Merge
-          When this PR is merged, the release workflow will automatically publish to npm and create the GitHub Release." \
+          When this PR is merged, the release workflow will publish to npm with the \`$NPM_TAG\` dist-tag and create a GitHub Release.
+
+          GitHub prerelease: \`$PRERELEASE\`
+          EOF
+
+          gh pr create \
+            --title "$TITLE" \
+            --body-file pr_body.md \
             --label "release" \
             --base main
