@@ -1,6 +1,6 @@
 {
 	"name": "@almeidx/discore",
-	"version": "0.0.1",
+	"version": "0.0.2-next.0",
 	"description": "A lightweight, functional Discord bot framework built on @discordjs/core",
 	"keywords": [
 		"bot",
