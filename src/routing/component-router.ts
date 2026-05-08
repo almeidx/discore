@@ -50,6 +50,7 @@ export function createComponentRouter(
 			}
 			if (!suppressed) {
 				await sendErrorResponse(errorResponse, ctx, error);
+				throw error;
 			}
 		}
 	}
@@ -65,8 +66,11 @@ export function createComponentRouter(
 					if (params) {
 						const ctx = createButtonContext(api, gateway, interaction, params);
 						if (!(await runBeforeInteraction(hooks, ctx))) return;
-						await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
-						await runAfterInteraction(hooks, ctx);
+						try {
+							await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
+						} finally {
+							await runAfterInteraction(hooks, ctx);
+						}
 						return;
 					}
 				}
@@ -76,8 +80,11 @@ export function createComponentRouter(
 					if (params) {
 						const ctx = createSelectMenuContext(api, gateway, interaction, params);
 						if (!(await runBeforeInteraction(hooks, ctx))) return;
-						await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
-						await runAfterInteraction(hooks, ctx);
+						try {
+							await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
+						} finally {
+							await runAfterInteraction(hooks, ctx);
+						}
 						return;
 					}
 				}
@@ -92,8 +99,11 @@ export function createComponentRouter(
 				if (params) {
 					const ctx = createModalContext(api, gateway, interaction, params);
 					if (!(await runBeforeInteraction(hooks, ctx))) return;
-					await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
-					await runAfterInteraction(hooks, ctx);
+					try {
+						await runHandler(ctx, () => def.handler(ctx), def.hooks?.onError);
+					} finally {
+						await runAfterInteraction(hooks, ctx);
+					}
 					return;
 				}
 			}

@@ -144,6 +144,7 @@ export function createInteractionRouter(config: {
 			if (!suppressed && hooks.onError && (await hooks.onError(ctx, error)) === false) suppressed = true;
 			if (!suppressed) {
 				await sendErrorResponse(errorResponse, ctx, error);
+				throw error;
 			}
 		} finally {
 			if (handlerRan) {
@@ -253,6 +254,9 @@ export function createInteractionRouter(config: {
 						}
 						if (!suppressed && !hasResponded()) {
 							await ctx.respond([]);
+						}
+						if (!suppressed) {
+							throw error;
 						}
 					}
 					return;

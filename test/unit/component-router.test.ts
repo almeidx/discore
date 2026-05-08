@@ -132,9 +132,31 @@ describe("createComponentRouter", () => {
 
 		const api = createMockAPI();
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
-		await router.handleComponent(api, {} as any, buttonInteraction("fail"));
+		await assert.rejects(router.handleComponent(api, {} as any, buttonInteraction("fail")), {
+			message: "button failed",
+		});
 
 		assert.strictEqual((api.interactions.reply as ReturnType<typeof mock.fn>).mock.callCount(), 1);
+	});
+
+	it("runs afterInteraction when a component handler throws", async () => {
+		const afterInteraction = mock.fn(async () => {});
+		const buttons: ButtonDefinition[] = [
+			{
+				type: DefinitionType.Button,
+				customId: /^fail$/,
+				handler: async () => {
+					throw new Error("button failed");
+				},
+			},
+		];
+
+		const router = createComponentRouter(buttons, [], [], { afterInteraction }, null);
+		await assert.rejects(router.handleComponent(createMockAPI(), {} as any, buttonInteraction("fail")), {
+			message: "button failed",
+		});
+
+		assert.strictEqual(afterInteraction.mock.callCount(), 1);
 	});
 
 	it("does not continue to next handler when first match throws", async () => {
@@ -151,7 +173,9 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter(buttons, [], [], {}, null);
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("test"));
+		await assert.rejects(router.handleComponent(createMockAPI(), {} as any, buttonInteraction("test")), {
+			message: "first fails",
+		});
 
 		assert.strictEqual(handler2.mock.callCount(), 0);
 	});

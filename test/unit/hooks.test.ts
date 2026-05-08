@@ -93,16 +93,37 @@ describe("hooks", () => {
 		const cmd: CommandDefinition = {
 			type: DefinitionType.Command,
 			data: { name: "test", description: "test", options: [] },
-			hooks: { afterCommand, onError: async () => {} },
+			hooks: { afterCommand },
 			handler: async () => {
 				throw new Error("boom");
 			},
 		};
 
 		const router = createRouter(cmd);
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await assert.rejects(router.handle(createMockAPI(), {} as any, chatInputInteraction("test")), {
+			message: "boom",
+		});
 
 		assert.strictEqual(afterCommand.mock.callCount(), 1);
+	});
+
+	it("afterInteraction runs even when command handler throws", async () => {
+		const afterInteraction = mock.fn(async () => {});
+
+		const cmd: CommandDefinition = {
+			type: DefinitionType.Command,
+			data: { name: "test", description: "test", options: [] },
+			handler: async () => {
+				throw new Error("boom");
+			},
+		};
+
+		const router = createRouter(cmd, { afterInteraction });
+		await assert.rejects(router.handle(createMockAPI(), {} as any, chatInputInteraction("test")), {
+			message: "boom",
+		});
+
+		assert.strictEqual(afterInteraction.mock.callCount(), 1);
 	});
 
 	it("global afterCommand runs when no per-command hook", async () => {

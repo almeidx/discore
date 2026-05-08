@@ -91,7 +91,7 @@ describe("createInteractionRouter", () => {
 		};
 
 		const { api, gateway, router } = setup([cmd]);
-		await router.handle(api, gateway, chatInputInteraction("test"));
+		await assert.rejects(router.handle(api, gateway, chatInputInteraction("test")), { message: "boom" });
 
 		assert.strictEqual(onError.mock.callCount(), 1);
 	});
@@ -121,7 +121,7 @@ describe("createInteractionRouter", () => {
 			missingPermissionsResponse: undefined,
 		});
 
-		await router.handle(api, gateway, chatInputInteraction("test"));
+		await assert.rejects(router.handle(api, gateway, chatInputInteraction("test")), { message: "boom" });
 
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
 	});
@@ -411,8 +411,48 @@ describe("createInteractionRouter", () => {
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
 
-	it("routes autocomplete errors through the global error hook and responds with empty choices", async () => {
+	it("routes autocomplete errors through the global error hook, responds with empty choices, and rethrows", async () => {
 		const onError = mock.fn(async () => {});
+		const api = createMockAPI();
+		const router = createInteractionRouter({
+			commands: new Map(),
+			commandGroups: new Map(),
+			userCommands: new Map(),
+			messageCommands: new Map(),
+			autocompletes: [
+				{
+					type: DefinitionType.Autocomplete,
+					command: "search",
+					option: "query",
+					handler: async () => {
+						throw new Error("boom");
+					},
+				},
+			],
+			componentRouter: createComponentRouter([], [], [], {}, undefined),
+			collectorStore: createCollectorStore<ComponentInteractionContext>(),
+			modalCollectorStore: createCollectorStore<ModalContext>(),
+			hooks: { onError },
+			errorResponse: undefined,
+			missingPermissionsResponse: undefined,
+		});
+
+		await assert.rejects(
+			router.handle(api, {} as any, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
+			{
+				message: "boom",
+			},
+		);
+
+		assert.strictEqual(onError.mock.callCount(), 1);
+		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 1);
+		assert.deepStrictEqual(api.interactions.createAutocompleteResponse.mock.calls[0]!.arguments[2], {
+			choices: [],
+		});
+	});
+
+	it("does not rethrow autocomplete errors when the global error hook handles them", async () => {
+		const onError = mock.fn(async () => false);
 		const api = createMockAPI();
 		const router = createInteractionRouter({
 			commands: new Map(),
@@ -440,9 +480,6 @@ describe("createInteractionRouter", () => {
 		await router.handle(api, {} as any, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
 
 		assert.strictEqual(onError.mock.callCount(), 1);
-		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 1);
-		assert.deepStrictEqual(api.interactions.createAutocompleteResponse.mock.calls[0]!.arguments[2], {
-			choices: [],
-		});
+		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 0);
 	});
 });

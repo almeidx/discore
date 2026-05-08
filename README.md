@@ -54,6 +54,10 @@ await publishCommands({ rest, commands: [ping] });
 await gateway.connect();
 ```
 
+## Error handling
+
+Handler errors are surfaced by default. Discore sends the configured error response, or empty autocomplete choices for autocomplete handlers, then rethrows the original error. Return `false` from an `onError` hook only when the hook has handled the error and should suppress both the fallback response and the rethrow.
+
 ## Typed options
 
 ```ts
