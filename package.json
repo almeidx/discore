@@ -50,8 +50,8 @@
 		"@discordjs/ws": "3.0.0-dev.1777075897-40ce0791a",
 		"discord-api-types": "^0.38.47",
 		"husky": "^9.1.7",
-		"oxfmt": "^0.50.0",
-		"oxlint": "^1.65.0",
+		"oxfmt": "^0.51.0",
+		"oxlint": "^1.66.0",
 		"tsdown": "^0.22.0",
 		"typescript": "^6.0.3"
 	},
@@ -64,5 +64,5 @@
 	"engines": {
 		"node": ">=24.0.0"
 	},
-	"packageManager": "pnpm@11.1.2"
+	"packageManager": "pnpm@11.1.3"
 }
