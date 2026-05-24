@@ -44,10 +44,10 @@
 		"test": "node --test './test/**/*.test.ts'"
 	},
 	"devDependencies": {
-		"@discordjs/collection": "3.0.0-dev.1777075897-40ce0791a",
-		"@discordjs/core": "3.0.0-dev.1777075897-40ce0791a",
-		"@discordjs/rest": "3.0.0-dev.1777075897-40ce0791a",
-		"@discordjs/ws": "3.0.0-dev.1777075897-40ce0791a",
+		"@discordjs/collection": "3.0.0-dev.1779528402-e721e51b0",
+		"@discordjs/core": "3.0.0-dev.1779528402-e721e51b0",
+		"@discordjs/rest": "3.0.0-dev.1779528402-e721e51b0",
+		"@discordjs/ws": "3.0.0-dev.1779528402-e721e51b0",
 		"discord-api-types": "^0.38.47",
 		"husky": "^9.1.7",
 		"oxfmt": "^0.51.0",
