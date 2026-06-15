@@ -153,6 +153,16 @@ describe("interaction state re-entrancy", () => {
 		assert.strictEqual(api.interactions.createModal.mock.callCount(), 0);
 	});
 
+	it("update after reply rejects with a descriptive error", async () => {
+		const api = createMockAPI();
+		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+
+		await ctx.reply({ content: "hello" });
+
+		await assert.rejects(ctx.update({ content: "x" }), { message: /already acknowledged/ });
+		assert.strictEqual(api.interactions.updateMessage.mock.callCount(), 0);
+	});
+
 	it("failed defer rolls back both flags", async () => {
 		const api = createMockAPI();
 		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
@@ -180,5 +190,41 @@ describe("interaction state re-entrancy", () => {
 		await assert.rejects(ctx.showModal({ title: "Test", custom_id: "test", components: [] }));
 
 		assert.strictEqual(ctx.replied, false);
+	});
+
+	it("failed update rolls back", async () => {
+		const api = createMockAPI();
+		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		api.interactions.updateMessage.mock.mockImplementationOnce(async () => {
+			throw new Error("network");
+		});
+
+		await assert.rejects(ctx.update({ content: "a" }), { message: "network" });
+		assert.strictEqual(ctx.replied, false);
+		assert.strictEqual(ctx.deferred, false);
+
+		await ctx.update({ content: "a" });
+
+		assert.strictEqual(api.interactions.updateMessage.mock.callCount(), 2);
+		assert.strictEqual(ctx.replied, true);
+		assert.strictEqual(ctx.deferred, false);
+	});
+
+	it("failed deferUpdate rolls back", async () => {
+		const api = createMockAPI();
+		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		api.interactions.deferMessageUpdate.mock.mockImplementationOnce(async () => {
+			throw new Error("network");
+		});
+
+		await assert.rejects(ctx.deferUpdate(), { message: "network" });
+		assert.strictEqual(ctx.replied, false);
+		assert.strictEqual(ctx.deferred, false);
+
+		await ctx.deferUpdate();
+
+		assert.strictEqual(api.interactions.deferMessageUpdate.mock.callCount(), 2);
+		assert.strictEqual(ctx.replied, true);
+		assert.strictEqual(ctx.deferred, true);
 	});
 });

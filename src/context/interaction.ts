@@ -5,14 +5,17 @@ import type {
 	CreateInteractionFollowUpResponseOptions,
 	EditInteractionResponseOptions,
 	CreateModalResponseOptions,
+	CreateInteractionUpdateMessageResponseOptions,
 } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIInteraction, APIMessage } from "discord-api-types/v10";
 import type { InteractionContext } from "../types/contexts.ts";
 
 interface InteractionStateController {
+	isReplied(): boolean;
 	markReplied(): void;
 	markDeferred(): void;
+	rollback(): void;
 }
 
 export interface ManagedInteractionContext {
@@ -29,6 +32,10 @@ export function createManagedInteractionContext(
 	let deferred = false;
 
 	const controller: InteractionStateController = {
+		isReplied() {
+			return replied;
+		},
+
 		markReplied() {
 			replied = true;
 		},
@@ -36,6 +43,11 @@ export function createManagedInteractionContext(
 		markDeferred() {
 			deferred = true;
 			replied = true;
+		},
+
+		rollback() {
+			replied = false;
+			deferred = false;
 		},
 	};
 
@@ -111,6 +123,40 @@ export function createManagedInteractionContext(
 	};
 
 	return { context, controller };
+}
+
+export function createComponentUpdateMethods(
+	api: API,
+	interaction: Pick<APIInteraction, "id" | "token">,
+	controller: InteractionStateController,
+) {
+	return {
+		async update(data: CreateInteractionUpdateMessageResponseOptions): Promise<void> {
+			if (controller.isReplied()) {
+				throw new Error("Interaction was already acknowledged; update() must be the first response");
+			}
+			controller.markReplied();
+			try {
+				await api.interactions.updateMessage(interaction.id, interaction.token, data);
+			} catch (error) {
+				controller.rollback();
+				throw error;
+			}
+		},
+
+		async deferUpdate(): Promise<void> {
+			if (controller.isReplied()) {
+				throw new Error("Interaction was already acknowledged; deferUpdate() must be the first response");
+			}
+			controller.markDeferred();
+			try {
+				await api.interactions.deferMessageUpdate(interaction.id, interaction.token);
+			} catch (error) {
+				controller.rollback();
+				throw error;
+			}
+		},
+	};
 }
 
 export function createInteractionContext(
