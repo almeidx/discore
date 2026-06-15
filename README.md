@@ -58,6 +58,8 @@ await gateway.connect();
 
 Handler errors are surfaced by default. Discore sends the configured error response, or empty autocomplete choices for autocomplete handlers, then rethrows the original error. Return `false` from an `onError` hook only when the hook has handled the error and should suppress both the fallback response and the rethrow.
 
+The rethrown error rejects the gateway dispatch listener. By default that becomes an unhandled promise rejection, which terminates a Node.js process -- register an `onError` hook that returns `false`, a `process.on("unhandledRejection")` handler, or enable `captureRejections` on the `WebSocketManager` and listen to its `error` event if you want the bot to keep running. An error thrown by one handler no longer prevents other handlers (such as `defineEvent` handlers for the same gateway payload) from running; when several handlers fail on one payload, the rejection is an `AggregateError`.
+
 ## Typed options
 
 ```ts

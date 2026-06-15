@@ -18,9 +18,12 @@ export async function sendErrorResponse(
 	const response = errorResponse === undefined ? defaultErrorResponse : errorResponse;
 	if (response === null) return;
 
-	const data = typeof response === "function" ? response(ctx, error) : response;
-
-	await ctx.reply(data);
+	try {
+		const data = typeof response === "function" ? response(ctx, error) : response;
+		await ctx.reply(data);
+	} catch {
+		// the original handler error must propagate; a failed fallback response is secondary
+	}
 }
 
 export async function runBeforeInteraction(hooks: GlobalHooks, ctx: AnyInteractionContext): Promise<boolean> {

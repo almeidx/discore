@@ -253,7 +253,11 @@ export function createInteractionRouter(config: {
 							if (result === false) suppressed = true;
 						}
 						if (!suppressed && !hasResponded()) {
-							await ctx.respond([]);
+							try {
+								await ctx.respond([]);
+							} catch {
+								// the original handler error must propagate
+							}
 						}
 						if (!suppressed) {
 							throw error;

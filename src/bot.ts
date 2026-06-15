@@ -128,11 +128,27 @@ export function createBot(options: CreateBotOptions): Bot {
 	});
 
 	async function dispatchListener(payload: GatewayDispatchPayload, shardId: number) {
+		const errors: unknown[] = [];
+
 		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
-			await interactionRouter.handle(api, gateway, payload.d);
+			try {
+				await interactionRouter.handle(api, gateway, payload.d);
+			} catch (error) {
+				errors.push(error);
+			}
 		}
 
-		await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);
+		try {
+			await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);
+		} catch (error) {
+			errors.push(error);
+		}
+
+		if (errors.length === 1) {
+			throw errors[0];
+		} else if (errors.length > 1) {
+			throw new AggregateError(errors, "Dispatch failed");
+		}
 	}
 
 	const pings = new Collection<number, number>();
