@@ -21,10 +21,10 @@ export type AnyInteractionContext =
 export type AnyCommandContext = CommandContext | UserCommandContext | MessageCommandContext;
 
 /**
- * Per-handler hooks for component interaction handlers (buttons, select menus, modals).
+ * Per-handler hooks for component, event, and autocomplete handlers.
  */
 export interface HandlerHooks<TContext> {
-	/** Runs when the handler throws. Return `false` after handling the error to skip the default response and prevent rethrow. */
+	/** Runs when the handler throws. Return `false` after handling the error to skip the default response and prevent rethrow. For events, returning false marks the error handled and skips the global onEventError hook and rethrow. */
 	onError?: (ctx: TContext, error: unknown) => Promise<boolean | void> | boolean | void;
 }
 

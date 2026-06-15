@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
+import type { WebSocketManager } from "@discordjs/ws";
 import { GatewayDispatchEvents } from "discord-api-types/v10";
 import { createEventRouter } from "../../src/routing/event-router.ts";
 import { DefinitionType, type EventDefinition } from "../../src/types/definitions.ts";
@@ -110,6 +111,111 @@ describe("createEventRouter", () => {
 		assert.strictEqual(onEventError.mock.callCount(), 1);
 		const errorArg = onEventError.mock.calls[0]!.arguments as unknown[];
 		assert.strictEqual((errorArg[1] as Error).message, "boom");
+	});
+
+	it("runs per-event onError before global onEventError", async () => {
+		const order: string[] = [];
+		const gateway = {} as WebSocketManager;
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				hooks: {
+					onError: async () => {
+						order.push("event");
+					},
+				},
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, {
+			onEventError: async () => {
+				order.push("global");
+			},
+		});
+
+		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), gateway, 0);
+
+		assert.deepStrictEqual(order, ["event", "global"]);
+	});
+
+	it("does not call global onEventError or rethrow when per-event onError returns false", async () => {
+		const onEventError = mock.fn(async () => {});
+		const gateway = {} as WebSocketManager;
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				hooks: {
+					onError: async () => false,
+				},
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, { onEventError });
+
+		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), gateway, 0));
+		assert.strictEqual(onEventError.mock.callCount(), 0);
+	});
+
+	it("does not rethrow when per-event onError returns false without a global hook", async () => {
+		const gateway = {} as WebSocketManager;
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				hooks: {
+					onError: async () => false,
+				},
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, {});
+
+		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), gateway, 0));
+	});
+
+	it("collects a thrown per-event onError with the original handler error", async () => {
+		const gateway = {} as WebSocketManager;
+		const events: EventDefinition[] = [
+			{
+				type: DefinitionType.Event,
+				event: GatewayDispatchEvents.MessageCreate,
+				priority: 0,
+				hooks: {
+					onError: async () => {
+						throw new Error("hook boom");
+					},
+				},
+				handler: async () => {
+					throw new Error("handler boom");
+				},
+			},
+		];
+
+		const router = createEventRouter(events, {});
+
+		await assert.rejects(
+			router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockAPI(), gateway, 0),
+			(error: unknown) => {
+				assert.ok(error instanceof AggregateError);
+				const messages = Array.from(error.errors as Iterable<unknown>, (cause) => (cause as Error).message);
+				assert.deepStrictEqual(messages, ["hook boom", "handler boom"]);
+				return true;
+			},
+		);
 	});
 
 	it("does not propagate error when onEventError is set", async () => {

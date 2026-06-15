@@ -8,7 +8,7 @@ A lightweight, functional Discord bot framework built on [`@discordjs/core`](htt
 - **Type-safe options** — Command options inferred from definitions. `ctx.options.user` is typed automatically.
 - **Component routing** — Regex-based `customId` matching with named capture groups as `ctx.params`.
 - **Collectors** — `awaitComponent` and `awaitModal` (single, Promise-based) and `collectComponents` (async iterator).
-- **Hooks** — Per-command and global `beforeCommand`/`afterCommand`/`onError` hooks.
+- **Hooks** — Per-command and global `beforeCommand`/`afterCommand`/`onError` hooks; per-definition `onError` on components, events, and autocomplete.
 - **Command publishing** — `publishCommands` maps definitions to the Discord API format.
 
 ## Requirements

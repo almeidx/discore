@@ -1,5 +1,6 @@
 import type { AutocompleteContext } from "../types/contexts.ts";
 import { DefinitionType, type AutocompleteDefinition } from "../types/definitions.ts";
+import type { HandlerHooks } from "../types/hooks.ts";
 
 export interface DefineAutocompleteConfig {
 	/**
@@ -10,6 +11,7 @@ export interface DefineAutocompleteConfig {
 	 */
 	command: string | [string, string] | [string, string, string];
 	option: string;
+	hooks?: HandlerHooks<AutocompleteContext>;
 	handler: (ctx: AutocompleteContext) => void | Promise<void>;
 }
 
@@ -19,6 +21,7 @@ export function defineAutocomplete(config: DefineAutocompleteConfig): Autocomple
 		type: DefinitionType.Autocomplete,
 		command: config.command,
 		option: config.option,
+		hooks: config.hooks,
 		handler: config.handler,
 	};
 }

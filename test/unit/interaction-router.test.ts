@@ -4,7 +4,7 @@ import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { createComponentRouter } from "../../src/routing/component-router.ts";
 import { createInteractionRouter } from "../../src/routing/interaction-router.ts";
 import type { ModalContext } from "../../src/types/contexts.ts";
-import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
+import { DefinitionType, type AutocompleteDefinition, type CommandDefinition } from "../../src/types/definitions.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { autocompleteInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
@@ -449,6 +449,71 @@ describe("createInteractionRouter", () => {
 		assert.deepStrictEqual(api.interactions.createAutocompleteResponse.mock.calls[0]!.arguments[2], {
 			choices: [],
 		});
+	});
+
+	it("runs autocomplete definition onError before global onError and rethrows when neither suppresses", async () => {
+		const order: string[] = [];
+		const autocompletes: AutocompleteDefinition[] = [
+			{
+				type: DefinitionType.Autocomplete,
+				command: "search",
+				option: "query",
+				hooks: {
+					onError: async () => {
+						order.push("definition");
+					},
+				},
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const { api, gateway, router } = setup([], {
+			autocompletes,
+			hooks: {
+				onError: async () => {
+					order.push("global");
+				},
+			},
+		});
+
+		await assert.rejects(
+			router.handle(api, gateway, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
+			{
+				message: "boom",
+			},
+		);
+
+		assert.deepStrictEqual(order, ["definition", "global"]);
+		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 1);
+	});
+
+	it("suppresses autocomplete empty response and rethrow when definition onError returns false", async () => {
+		const onError = mock.fn(async () => {});
+		const autocompletes: AutocompleteDefinition[] = [
+			{
+				type: DefinitionType.Autocomplete,
+				command: "search",
+				option: "query",
+				hooks: {
+					onError: async () => false,
+				},
+				handler: async () => {
+					throw new Error("boom");
+				},
+			},
+		];
+
+		const { api, gateway, router } = setup([], {
+			autocompletes,
+			hooks: { onError },
+		});
+
+		await router.handle(api, gateway, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
+
+		assert.strictEqual(onError.mock.callCount(), 0);
+		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 0);
 	});
 
 	it("does not rethrow autocomplete errors when the global error hook handles them", async () => {

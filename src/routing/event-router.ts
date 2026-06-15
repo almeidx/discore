@@ -58,6 +58,16 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 				try {
 					await def.handler(ctx);
 				} catch (error) {
+					let suppressed = false;
+					if (def.hooks?.onError) {
+						try {
+							if ((await def.hooks.onError(ctx, error)) === false) suppressed = true;
+						} catch (hookError) {
+							errors.push(hookError);
+						}
+					}
+					if (suppressed) continue;
+
 					if (hooks.onEventError) {
 						try {
 							await hooks.onEventError(ctx, error);

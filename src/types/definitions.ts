@@ -57,6 +57,7 @@ export interface EventDefinition {
 	event: GatewayDispatchEvents;
 	priority: number;
 	once?: boolean;
+	hooks?: HandlerHooks<EventContext>;
 	handler: (ctx: EventContext) => void | Promise<void>;
 }
 
@@ -85,6 +86,7 @@ export interface AutocompleteDefinition {
 	type: typeof DefinitionType.Autocomplete;
 	command: string | [string, string] | [string, string, string];
 	option: string;
+	hooks?: HandlerHooks<AutocompleteContext>;
 	handler: (ctx: AutocompleteContext) => void | Promise<void>;
 }
 

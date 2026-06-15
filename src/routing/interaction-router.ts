@@ -248,7 +248,11 @@ export function createInteractionRouter(config: {
 						await def.handler(ctx);
 					} catch (error) {
 						let suppressed = false;
-						if (hooks.onError) {
+						if (def.hooks?.onError) {
+							const result = await def.hooks.onError(ctx, error);
+							if (result === false) suppressed = true;
+						}
+						if (!suppressed && hooks.onError) {
 							const result = await hooks.onError(ctx, error);
 							if (result === false) suppressed = true;
 						}
