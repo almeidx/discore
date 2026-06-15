@@ -1,16 +1,23 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { awaitComponent } from "../../src/collectors/await-component.ts";
+import { awaitModal } from "../../src/collectors/await-modal.ts";
 import { collectComponents } from "../../src/collectors/collect-components.ts";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { CollectorTimeoutError } from "../../src/collectors/errors.ts";
 import { createButtonContext } from "../../src/context/button.ts";
+import { createModalContext } from "../../src/context/modal.ts";
+import type { ModalContext } from "../../src/types/contexts.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
-import { buttonInteraction } from "../fixtures/interactions.ts";
+import { buttonInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
 
 function fakeButtonCtx(customId: string) {
 	return createButtonContext(createMockAPI() as any, {} as any, buttonInteraction(customId), {});
+}
+
+function fakeModalCtx(customId: string) {
+	return createModalContext(createMockAPI() as any, {} as any, modalSubmitInteraction(customId, []), {});
 }
 
 describe("collector-store", () => {
@@ -59,14 +66,88 @@ describe("awaitComponent", () => {
 		assert.strictEqual(result.customId, "confirm");
 	});
 
-	it("rejects on timeout", async () => {
+	it("rejects on timeout", async (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout"] });
 		const store = createCollectorStore<ComponentInteractionContext>();
 		const promise = awaitComponent(store, {
 			filter: () => true,
 			timeout: 50,
 		});
 
-		await assert.rejects(promise, CollectorTimeoutError);
+		const assertion = assert.rejects(promise, CollectorTimeoutError);
+		t.mock.timers.tick(50);
+		await assertion;
+	});
+
+	it("unregisters after timeout", async (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout"] });
+		const store = createCollectorStore<ComponentInteractionContext>();
+		const promise = awaitComponent(store, {
+			filter: () => true,
+			timeout: 50,
+		});
+
+		const assertion = assert.rejects(promise, CollectorTimeoutError);
+		t.mock.timers.tick(50);
+		await assertion;
+
+		assert.strictEqual(store.dispatch(fakeButtonCtx("confirm")), false);
+	});
+});
+
+describe("awaitModal", () => {
+	it("resolves when a matching modal arrives", async () => {
+		const store = createCollectorStore<ModalContext>();
+		const promise = awaitModal(store, {
+			filter: (ctx) => ctx.customId === "feedback",
+			timeout: 5000,
+		});
+
+		store.dispatch(fakeModalCtx("feedback"));
+
+		const result = await promise;
+		assert.strictEqual(result.customId, "feedback");
+	});
+
+	it("rejects on timeout", async (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout"] });
+		const store = createCollectorStore<ModalContext>();
+		const promise = awaitModal(store, {
+			filter: () => true,
+			timeout: 50,
+		});
+
+		const assertion = assert.rejects(promise, CollectorTimeoutError);
+		t.mock.timers.tick(50);
+		await assertion;
+	});
+
+	it("unregisters after resolving", async () => {
+		const store = createCollectorStore<ModalContext>();
+		const promise = awaitModal(store, {
+			filter: (ctx) => ctx.customId === "feedback",
+			timeout: 5000,
+		});
+
+		store.dispatch(fakeModalCtx("feedback"));
+		await promise;
+
+		assert.strictEqual(store.dispatch(fakeModalCtx("feedback")), false);
+	});
+
+	it("unregisters after timeout", async (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout"] });
+		const store = createCollectorStore<ModalContext>();
+		const promise = awaitModal(store, {
+			filter: () => true,
+			timeout: 50,
+		});
+
+		const assertion = assert.rejects(promise, CollectorTimeoutError);
+		t.mock.timers.tick(50);
+		await assertion;
+
+		assert.strictEqual(store.dispatch(fakeModalCtx("feedback")), false);
 	});
 });
 
@@ -118,6 +199,27 @@ describe("collectComponents", () => {
 		const done = await collector.next();
 		assert.strictEqual(done.done, true);
 		assert.strictEqual(endReason, "manual");
+	});
+
+	it("ends with timeout reason and completes pending iterations", async (t) => {
+		t.mock.timers.enable({ apis: ["setTimeout"] });
+		const store = createCollectorStore<ComponentInteractionContext>();
+		let endReason: string | undefined;
+
+		const collector = collectComponents(store, {
+			filter: () => true,
+			timeout: 1000,
+			onEnd: (_, reason) => {
+				endReason = reason;
+			},
+		});
+
+		const pendingNext = collector.next();
+		t.mock.timers.tick(1000);
+
+		const result = await pendingNext;
+		assert.strictEqual(result.done, true);
+		assert.strictEqual(endReason, "timeout");
 	});
 
 	it("supports multiple pending next calls without hanging", async () => {
