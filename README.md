@@ -7,7 +7,7 @@ A lightweight, functional Discord bot framework built on [`@discordjs/core`](htt
 - **Functional API** — No classes, just functions. `defineCommand`, `defineEvent`, `defineButton`, etc.
 - **Type-safe options** — Command options inferred from definitions. `ctx.options.user` is typed automatically.
 - **Component routing** — Regex-based `customId` matching with named capture groups as `ctx.params`.
-- **Collectors** — `awaitComponent` (single, Promise-based) and `collectComponents` (async iterator).
+- **Collectors** — `awaitComponent` and `awaitModal` (single, Promise-based) and `collectComponents` (async iterator).
 - **Hooks** — Per-command and global `beforeCommand`/`afterCommand`/`onError` hooks.
 - **Command publishing** — `publishCommands` maps definitions to the Discord API format.
 
@@ -49,8 +49,8 @@ const gateway = new WebSocketManager({
 	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
-createBot({ rest, gateway, commands: [ping] });
-await publishCommands({ rest, commands: [ping] });
+const bot = createBot({ rest, gateway, commands: [ping] });
+await publishCommands({ api: bot.api, applicationId: process.env.DISCORD_APP_ID!, commands: [ping] });
 await gateway.connect();
 ```
 
@@ -119,9 +119,41 @@ for await (const interaction of collector) {
 }
 ```
 
+Modals are collected the same way -- show the modal, then await its submission:
+
+```ts
+await ctx.showModal({
+	title: "Feedback",
+	custom_id: "feedback-modal",
+	components: [
+		/* ... */
+	],
+});
+
+const submission = await ctx.awaitModal({
+	filter: (i) => i.customId === "feedback-modal",
+	timeout: 300_000,
+});
+
+const message = submission.fields.getRequired("message");
+await submission.reply({ content: "Thanks for the feedback!" });
+```
+
+`awaitComponent`, `awaitModal`, and `collectComponents` reject (or end) with a `CollectorTimeoutError` when the timeout elapses -- wrap them in `try/catch` if a timeout is an expected outcome (see `examples/config-command.ts`).
+
 ## More examples
 
 See the [`examples/`](./examples) directory.
+
+## Development
+
+```sh
+pnpm install
+pnpm test              # node:test suite
+pnpm run lint          # oxfmt --check && oxlint
+pnpm run build:typecheck
+pnpm build             # tsdown -> dist/
+```
 
 ## License
 

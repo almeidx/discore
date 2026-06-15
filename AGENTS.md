@@ -10,7 +10,7 @@
 - **Language**: TypeScript (strict mode, ESM-only)
 - **Package manager**: pnpm
 - **Test runner**: `node:test` (built-in)
-- **Peer dependency**: `@discordjs/core` >= 2.0.0
+- **Peer dependency**: `@discordjs/core` >= 3.0.0-dev
 
 ## Architecture
 
