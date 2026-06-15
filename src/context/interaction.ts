@@ -57,13 +57,27 @@ export function createManagedInteractionContext(
 				await api.interactions.followUp(interaction.application_id, interaction.token, data);
 				return;
 			}
-			await api.interactions.reply(interaction.id, interaction.token, data);
 			controller.markReplied();
+			try {
+				await api.interactions.reply(interaction.id, interaction.token, data);
+			} catch (error) {
+				replied = false;
+				throw error;
+			}
 		},
 
 		async defer(data?: CreateInteractionDeferResponseOptions): Promise<void> {
-			await api.interactions.defer(interaction.id, interaction.token, data);
+			if (replied) {
+				throw new Error("Interaction was already acknowledged; defer() must be the first response");
+			}
 			controller.markDeferred();
+			try {
+				await api.interactions.defer(interaction.id, interaction.token, data);
+			} catch (error) {
+				replied = false;
+				deferred = false;
+				throw error;
+			}
 		},
 
 		async followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage> {
@@ -83,8 +97,16 @@ export function createManagedInteractionContext(
 		},
 
 		async showModal(data: CreateModalResponseOptions): Promise<void> {
-			await api.interactions.createModal(interaction.id, interaction.token, data);
+			if (replied) {
+				throw new Error("Interaction was already acknowledged; showModal() must be the first response");
+			}
 			controller.markReplied();
+			try {
+				await api.interactions.createModal(interaction.id, interaction.token, data);
+			} catch (error) {
+				replied = false;
+				throw error;
+			}
 		},
 	};
 

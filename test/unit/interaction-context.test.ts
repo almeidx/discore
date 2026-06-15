@@ -103,3 +103,82 @@ describe("createInteractionContext", () => {
 		assert.strictEqual(api.interactions.deferMessageUpdate.mock.callCount(), 1);
 	});
 });
+
+describe("interaction state re-entrancy", () => {
+	it("concurrent replies send one initial reply and one follow-up", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+
+		await Promise.all([ctx.reply({ content: "a" }), ctx.reply({ content: "b" })]);
+
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
+		assert.strictEqual(api.interactions.followUp.mock.callCount(), 1);
+	});
+
+	it("failed initial reply rolls back so a retry replies instead of following up", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		api.interactions.reply.mock.mockImplementationOnce(async () => {
+			throw new Error("network");
+		});
+
+		await assert.rejects(ctx.reply({ content: "a" }), { message: "network" });
+		assert.strictEqual(ctx.replied, false);
+
+		await ctx.reply({ content: "a" });
+
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 2);
+		assert.strictEqual(api.interactions.followUp.mock.callCount(), 0);
+	});
+
+	it("defer after reply rejects with a descriptive error", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+
+		await ctx.reply({ content: "hello" });
+
+		await assert.rejects(ctx.defer(), { message: /already acknowledged/ });
+		assert.strictEqual(api.interactions.defer.mock.callCount(), 0);
+	});
+
+	it("showModal after reply rejects with a descriptive error", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+
+		await ctx.reply({ content: "hello" });
+
+		await assert.rejects(ctx.showModal({ title: "Test", custom_id: "test", components: [] }), {
+			message: /already acknowledged/,
+		});
+		assert.strictEqual(api.interactions.createModal.mock.callCount(), 0);
+	});
+
+	it("failed defer rolls back both flags", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		api.interactions.defer.mock.mockImplementationOnce(async () => {
+			throw new Error("network");
+		});
+
+		await assert.rejects(ctx.defer());
+		assert.strictEqual(ctx.deferred, false);
+		assert.strictEqual(ctx.replied, false);
+
+		await ctx.reply({ content: "a" });
+
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
+		assert.strictEqual(api.interactions.followUp.mock.callCount(), 0);
+	});
+
+	it("failed showModal rolls back", async () => {
+		const api = createMockAPI();
+		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		api.interactions.createModal.mock.mockImplementationOnce(async () => {
+			throw new Error("network");
+		});
+
+		await assert.rejects(ctx.showModal({ title: "Test", custom_id: "test", components: [] }));
+
+		assert.strictEqual(ctx.replied, false);
+	});
+});
