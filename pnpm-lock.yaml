@@ -21,8 +21,8 @@ importers:
         specifier: 3.0.0-dev.1781701555-a831287b9
         version: 3.0.0-dev.1781701555-a831287b9
       discord-api-types:
-        specifier: ^0.38.48
-        version: 0.38.48
+        specifier: ^0.38.49
+        version: 0.38.49
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -503,8 +503,8 @@ packages:
   defu@6.1.7:
     resolution: {integrity: sha512-7z22QmUWiQ/2d0KkdYmANbRUVABpZ9SNYyH5vx6PZ+nE5bcC0l7uFvEfHlyld/HcGBFTL536ClDt3DEcSlEJAQ==}
 
-  discord-api-types@0.38.48:
-    resolution: {integrity: sha512-WFUE/2o0lBlLeCQonQ+Pu2RqHAqbytBJ2RlXR91gzk05InSS6k9ShzzLYoymrA4c2oRgRKGE7/VqQJNNdGWSxQ==}
+  discord-api-types@0.38.49:
+    resolution: {integrity: sha512-XnqcWmnFZFAE8ZM8SHAw9DIV8D3Or00rMQ8iQLotrEA2PmXhl+ykaf6L6q4l474hrSUH1JaYcv+iOMRWp2p6Tg==}
 
   dts-resolver@3.0.0:
     resolution: {integrity: sha512-1T1f+z+4tl9XD+m+0HBgWoL/nm0bOIffyWaUuUSBlFg/86IWvfx+wjNaO/ybU0AJzG9/Mi5hBUgGV6zCmWEN7Q==}
@@ -744,7 +744,7 @@ snapshots:
       '@discordjs/ws': 3.0.0-dev.1781701555-a831287b9
       '@sapphire/snowflake': 3.5.5
       '@vladfrangu/async_event_emitter': 2.4.7
-      discord-api-types: 0.38.48
+      discord-api-types: 0.38.49
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -756,7 +756,7 @@ snapshots:
       '@sapphire/async-queue': 1.5.5
       '@sapphire/snowflake': 3.5.5
       '@vladfrangu/async_event_emitter': 2.4.7
-      discord-api-types: 0.38.48
+      discord-api-types: 0.38.49
       magic-bytes.js: 1.13.0
       tslib: 2.8.1
       undici: 7.24.6
@@ -764,7 +764,7 @@ snapshots:
 
   '@discordjs/util@2.0.0-dev.1781701555-a831287b9':
     dependencies:
-      discord-api-types: 0.38.48
+      discord-api-types: 0.38.49
 
   '@discordjs/ws@3.0.0-dev.1781701555-a831287b9':
     dependencies:
@@ -773,7 +773,7 @@ snapshots:
       '@sapphire/async-queue': 1.5.5
       '@types/ws': 8.18.1
       '@vladfrangu/async_event_emitter': 2.4.7
-      discord-api-types: 0.38.48
+      discord-api-types: 0.38.49
       tslib: 2.8.1
       ws: 8.21.0
     transitivePeerDependencies:
@@ -1025,7 +1025,7 @@ snapshots:
 
   defu@6.1.7: {}
 
-  discord-api-types@0.38.48: {}
+  discord-api-types@0.38.49: {}
 
   dts-resolver@3.0.0: {}
 
