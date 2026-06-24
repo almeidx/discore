@@ -63,7 +63,7 @@
 		"discord-api-types": ">=0.38.49"
 	},
 	"engines": {
-		"node": ">=24.17.0"
+		"node": ">=22.19.0"
 	},
 	"packageManager": "pnpm@11.8.0"
 }

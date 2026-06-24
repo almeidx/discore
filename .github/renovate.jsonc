@@ -21,10 +21,6 @@
 			"schedule": ["* 5-9 * * *", "* * * * SAT,SUN"],
 		},
 		{
-			"enabled": false,
-			"matchDepTypes": ["engines"],
-		},
-		{
 			"enabled": true,
 			"groupName": "Node.js runtime",
 			"groupSlug": "node-js",
@@ -37,6 +33,10 @@
 				"!kindest/node",
 				"!docker.io/kindest/node",
 			],
+		},
+		{
+			"enabled": false,
+			"matchDepTypes": ["engines"],
 		},
 	],
 	"postUpdateOptions": ["pnpmDedupe"],
