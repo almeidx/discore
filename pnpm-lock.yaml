@@ -65,22 +65,27 @@ packages:
   '@discordjs/collection@3.0.0-dev.1781701555-a831287b9':
     resolution: {integrity: sha512-cV/Kj3Gja55KUFyxiQkTf1IlMn1XCEOUAaL5DRZOWQsLOTdNuYomQdXxfpxGGVSO1qeJyZxXOnQeUgoYrYpAnA==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/core@3.0.0-dev.1781701555-a831287b9':
     resolution: {integrity: sha512-wJsZxs9CJORRLLYlqqe35+QiwWhDxK//CpLwhT/DH60sgS8QhrNbJnh5GeX8ntpF/jMM5XSTlBfFzDwv0XIoZQ==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/rest@3.0.0-dev.1781701555-a831287b9':
     resolution: {integrity: sha512-u9NQJIUvFDU15B/ZwG+tFBRMivmT7smyUS2MYE4Nsun3Tcm/ciDd0Q4rRLctC9z/iS4ogcRwviLMTcTiShNcIw==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/util@2.0.0-dev.1781701555-a831287b9':
     resolution: {integrity: sha512-GPJRrX0J7fdFSI7LQ9VXHxBBmIE4HTZR6f8Zj/ouY9RX/gZbvXCeP0FbylpGmZZaAxwbeNkjch6jqryQz4VCrw==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@discordjs/ws@3.0.0-dev.1781701555-a831287b9':
     resolution: {integrity: sha512-JhHJcSAFL7TzOQdq9qhjsuvxSzqgM6yQwlWdplJEzrx9TZ3VEcCHs6GUQmRQ0OfDlzcIxpG7wMASiyaZcsRr+A==}
     engines: {node: '>=22.12.0'}
+    deprecated: This version is deprecated. Please use a newer version.
 
   '@emnapi/core@1.11.1':
     resolution: {integrity: sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ==}
