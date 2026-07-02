@@ -4,23 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Version bump type"
+        description: Version bump type
         required: true
-        default: "patch"
+        default: patch
         type: choice
         options:
           - patch
           - minor
           - major
-          - prepatch
-          - preminor
-          - premajor
           - prerelease
-      preid:
-        description: "Prerelease identifier used for pre* bumps and the npm dist-tag"
-        required: false
-        default: "next"
-        type: string
+      prerelease_tag:
+        description: Pre-release tag to use when bump is prerelease.
+        required: true
+        default: alpha
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
 
 concurrency:
   group: release-prepare
@@ -32,12 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
 
       - uses: pnpm/action-setup@v6
 
@@ -56,15 +57,10 @@ jobs:
       - name: Bump version
         env:
           BUMP: ${{ inputs.bump }}
-          PREID: ${{ inputs.preid }}
+          PRERELEASE_TAG: ${{ inputs.prerelease_tag }}
         run: |
-          if [[ "$BUMP" == pre* ]]; then
-            if [[ ! "$PREID" =~ ^[A-Za-z][0-9A-Za-z-]*$ ]]; then
-              echo "::error::preid must start with a letter and contain only letters, numbers, and hyphens"
-              exit 1
-            fi
-
-            npm version "$BUMP" --preid "$PREID" --no-git-tag-version
+          if [[ "$BUMP" == "prerelease" ]]; then
+            npm version "$BUMP" --preid "$PRERELEASE_TAG" --no-git-tag-version
           else
             npm version "$BUMP" --no-git-tag-version
           fi
@@ -84,11 +80,11 @@ jobs:
             NPM_TAG="${PRERELEASE_PART%%.*}"
           fi
 
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
-          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Generate changelog
         run: |
@@ -144,24 +140,24 @@ jobs:
           TAG="${{ steps.version.outputs.tag }}"
           BRANCH="${{ steps.version.outputs.branch }}"
 
-          git checkout -b "$BRANCH"
+          git checkout -B "$BRANCH"
           git add package.json pnpm-lock.yaml CHANGELOG.md
           git commit -m "chore: release $TAG"
-          git push --force origin "$BRANCH"
+          git push --force-with-lease origin "$BRANCH"
+
+      - name: Ensure release label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh label create release --description "Release preparation" --color 0E8A16 --force
 
       - name: Create PR
         env:
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           TAG: ${{ steps.version.outputs.tag }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
           NPM_TAG: ${{ steps.version.outputs.npm_tag }}
         run: |
-          gh label create release \
-            --description "Release preparation PRs" \
-            --color "0e8a16" \
-            --force
-
           TITLE="Release $TAG"
           if [[ "$PRERELEASE" == "true" ]]; then
             TITLE="Prerelease $TAG"

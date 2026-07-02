@@ -1,8 +1,13 @@
 name: CI
+
 on:
   push:
     branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: CI
@@ -26,3 +31,5 @@ jobs:
       - run: pnpm run test
 
       - run: pnpm run build
+
+      - run: pnpm run publint

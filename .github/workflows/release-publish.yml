@@ -52,10 +52,10 @@ jobs:
           echo "Tag: $TAG"
           echo "Prerelease: $PRERELEASE"
           echo "npm tag: $NPM_TAG"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "prerelease=$PRERELEASE" >> $GITHUB_OUTPUT
-          echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
   publish:
     name: Publish
@@ -87,6 +87,8 @@ jobs:
       - run: pnpm run test
 
       - run: pnpm run build
+
+      - run: pnpm run publint
 
       - name: Extract changelog for this version
         id: changelog
