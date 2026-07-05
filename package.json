@@ -46,10 +46,10 @@
 		"test": "node --test './test/**/*.test.ts'"
 	},
 	"devDependencies": {
-		"@discordjs/collection": "3.0.0-dev.1782606054-b9c59f784",
-		"@discordjs/core": "3.0.0-dev.1782606054-b9c59f784",
-		"@discordjs/rest": "3.0.0-dev.1782606054-b9c59f784",
-		"@discordjs/ws": "3.0.0-dev.1782606054-b9c59f784",
+		"@discordjs/collection": "3.0.0-dev.1783254248-7afe2015c",
+		"@discordjs/core": "3.0.0-dev.1783254248-7afe2015c",
+		"@discordjs/rest": "3.0.0-dev.1783254248-7afe2015c",
+		"@discordjs/ws": "3.0.0-dev.1783254248-7afe2015c",
 		"discord-api-types": "^0.38.49",
 		"husky": "^9.1.7",
 		"oxfmt": "^0.57.0",
@@ -67,5 +67,5 @@
 	"engines": {
 		"node": ">=22.19.0"
 	},
-	"packageManager": "pnpm@11.9.0"
+	"packageManager": "pnpm@11.10.0"
 }
