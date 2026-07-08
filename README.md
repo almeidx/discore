@@ -125,9 +125,7 @@ Modals are collected the same way -- show the modal, then await its submission:
 await ctx.showModal({
 	title: "Feedback",
 	custom_id: "feedback-modal",
-	components: [
-		/* ... */
-	],
+	components: [/* ... */],
 });
 
 const submission = await ctx.awaitModal({
