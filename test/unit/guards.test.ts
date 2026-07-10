@@ -29,12 +29,11 @@ import {
 	selectMenuInteraction,
 	userCommandInteraction,
 } from "../fixtures/interactions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 function createCommandTestContext(): AnyInteractionContext {
 	return createCommandContext(
-		createMockAPI(),
-		{} as any,
+		createMockBot(),
 		chatInputInteraction("search"),
 		createCollectorStore<ComponentInteractionContext>(),
 		createCollectorStore<ModalContext>(),
@@ -43,8 +42,7 @@ function createCommandTestContext(): AnyInteractionContext {
 
 function createUserCommandTestContext(): AnyInteractionContext {
 	return createUserCommandContext(
-		createMockAPI(),
-		{} as any,
+		createMockBot(),
 		userCommandInteraction("info", "999"),
 		createCollectorStore<ComponentInteractionContext>(),
 		createCollectorStore<ModalContext>(),
@@ -53,8 +51,7 @@ function createUserCommandTestContext(): AnyInteractionContext {
 
 function createMessageCommandTestContext(): AnyInteractionContext {
 	return createMessageCommandContext(
-		createMockAPI(),
-		{} as any,
+		createMockBot(),
 		messageCommandInteraction("quote", "555"),
 		createCollectorStore<ComponentInteractionContext>(),
 		createCollectorStore<ModalContext>(),
@@ -62,21 +59,20 @@ function createMessageCommandTestContext(): AnyInteractionContext {
 }
 
 function createButtonTestContext(): AnyInteractionContext {
-	return createButtonContext(createMockAPI(), {} as any, buttonInteraction("confirm"), {});
+	return createButtonContext(createMockBot(), buttonInteraction("confirm"), {});
 }
 
 function createSelectMenuTestContext(): AnyInteractionContext {
-	return createSelectMenuContext(createMockAPI(), {} as any, selectMenuInteraction("choose", ["a"]), {});
+	return createSelectMenuContext(createMockBot(), selectMenuInteraction("choose", ["a"]), {});
 }
 
 function createModalTestContext(): AnyInteractionContext {
-	return createModalContext(createMockAPI(), {} as any, modalSubmitInteraction("feedback", []), {});
+	return createModalContext(createMockBot(), modalSubmitInteraction("feedback", []), {});
 }
 
 function createAutocompleteTestContext(): AnyInteractionContext {
 	return createAutocompleteContext(
-		createMockAPI(),
-		{} as any,
+		createMockBot(),
 		autocompleteInteraction("search", { name: "query", value: "x", type: 3 }),
 	);
 }

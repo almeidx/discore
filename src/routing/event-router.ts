@@ -1,18 +1,11 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { GatewayDispatchEvents } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import { createEventContext } from "../context/event.ts";
 import type { EventDefinition } from "../types/definitions.ts";
 import type { GlobalHooks } from "../types/hooks.ts";
 
 export interface EventRouter {
-	dispatch(
-		event: GatewayDispatchEvents,
-		data: unknown,
-		api: API,
-		gateway: WebSocketManager,
-		shardId: number,
-	): Promise<void>;
+	dispatch(event: GatewayDispatchEvents, data: unknown, bot: Bot, shardId: number): Promise<void>;
 	addHandler(def: EventDefinition): void;
 	removeHandler(def: EventDefinition): boolean;
 }
@@ -42,7 +35,7 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 	}
 
 	return {
-		async dispatch(event, data, api, gateway, shardId) {
+		async dispatch(event, data, bot, shardId) {
 			const registered = handlerMap.get(event);
 			if (!registered || registered.length === 0) return;
 			const handlers = [...registered];
@@ -54,7 +47,7 @@ export function createEventRouter(events: EventDefinition[], hooks: GlobalHooks)
 					removeFromMap(def);
 				}
 
-				const ctx = createEventContext(api, gateway, data, shardId);
+				const ctx = createEventContext(bot, data, shardId);
 				try {
 					await def.handler(ctx);
 				} catch (error) {

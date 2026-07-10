@@ -4,7 +4,7 @@ import { GatewayDispatchEvents, type GatewayMessageCreateDispatchData } from "di
 import { defineEvent } from "../../src/definitions/event.ts";
 import { createEventRouter } from "../../src/routing/event-router.ts";
 import { DefinitionType } from "../../src/types/definitions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("type-safe event definitions", () => {
 	it("defineEvent infers event type from event name", () => {
@@ -41,7 +41,7 @@ describe("type-safe event definitions", () => {
 
 		const router = createEventRouter([evt], {});
 		const mockPayload = { content: "hello", author: { id: "1" } };
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, mockPayload, createMockAPI(), {} as any, 0);
+		await router.dispatch(GatewayDispatchEvents.MessageCreate, mockPayload, createMockBot(), 0);
 
 		assert.strictEqual(receivedContent, "hello");
 	});
@@ -57,7 +57,7 @@ describe("type-safe event definitions", () => {
 		});
 
 		const router = createEventRouter([evt], {});
-		await router.dispatch(GatewayDispatchEvents.Ready, {}, createMockAPI(), {} as any, 3);
+		await router.dispatch(GatewayDispatchEvents.Ready, {}, createMockBot(), 3);
 
 		assert.strictEqual(receivedShardId, 3);
 	});

@@ -10,6 +10,7 @@ import {
 } from "../../src/types/definitions.ts";
 import { buttonInteraction, selectMenuInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("createComponentRouter", () => {
 	it("matches button by regex and extracts params", async () => {
@@ -18,13 +19,15 @@ describe("createComponentRouter", () => {
 
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
 		const api = createMockAPI();
+		const bot = createMockBot(api);
 
-		await router.handleComponent(api, {} as any, buttonInteraction("verify:12345"));
+		await router.handleComponent(bot, buttonInteraction("verify:12345"));
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 		const ctx = handler.mock.calls[0]!.arguments[0];
 		assert.strictEqual(ctx.params.userId, "12345");
 		assert.strictEqual(ctx.customId, "verify:12345");
+		assert.strictEqual(ctx.bot, bot);
 	});
 
 	it("does not match non-matching button", async () => {
@@ -32,7 +35,7 @@ describe("createComponentRouter", () => {
 		const buttons: ButtonDefinition[] = [{ type: DefinitionType.Button, customId: /^verify:/, handler }];
 
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("other:123"));
+		await router.handleComponent(createMockBot(), buttonInteraction("other:123"));
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 	});
@@ -42,8 +45,8 @@ describe("createComponentRouter", () => {
 		const buttons: ButtonDefinition[] = [{ type: DefinitionType.Button, customId: /^verify:\d+$/g, handler }];
 
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
+		await router.handleComponent(createMockBot(), buttonInteraction("verify:123"));
+		await router.handleComponent(createMockBot(), buttonInteraction("verify:123"));
 
 		assert.strictEqual(handler.mock.callCount(), 2);
 	});
@@ -55,11 +58,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter([], selects, [], {}, undefined);
-		await router.handleComponent(
-			createMockAPI(),
-			{} as any,
-			selectMenuInteraction("role-select:main", ["role1", "role2"]),
-		);
+		await router.handleComponent(createMockBot(), selectMenuInteraction("role-select:main", ["role1", "role2"]));
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 		const ctx = handler.mock.calls[0]!.arguments[0];
@@ -73,8 +72,7 @@ describe("createComponentRouter", () => {
 
 		const router = createComponentRouter([], [], modals, {}, undefined);
 		await router.handleModal(
-			createMockAPI(),
-			{} as any,
+			createMockBot(),
 			modalSubmitInteraction("feedback:bug", [{ custom_id: "desc", value: "It broke" }]),
 		);
 
@@ -93,7 +91,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("verify:123"));
+		await router.handleComponent(createMockBot(), buttonInteraction("verify:123"));
 
 		assert.strictEqual(handler1.mock.callCount(), 1);
 		assert.strictEqual(handler2.mock.callCount(), 0);
@@ -112,7 +110,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter(buttons, [], [], { onError }, undefined);
-		await router.handleComponent(createMockAPI(), {} as any, buttonInteraction("fail"));
+		await router.handleComponent(createMockBot(), buttonInteraction("fail"));
 
 		assert.strictEqual(onError.mock.callCount(), 1);
 		const args = onError.mock.calls[0]!.arguments as unknown[];
@@ -131,8 +129,9 @@ describe("createComponentRouter", () => {
 		];
 
 		const api = createMockAPI();
+		const bot = createMockBot(api);
 		const router = createComponentRouter(buttons, [], [], {}, undefined);
-		await assert.rejects(router.handleComponent(api, {} as any, buttonInteraction("fail")), {
+		await assert.rejects(router.handleComponent(bot, buttonInteraction("fail")), {
 			message: "button failed",
 		});
 
@@ -152,7 +151,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter(buttons, [], [], { afterInteraction }, null);
-		await assert.rejects(router.handleComponent(createMockAPI(), {} as any, buttonInteraction("fail")), {
+		await assert.rejects(router.handleComponent(createMockBot(), buttonInteraction("fail")), {
 			message: "button failed",
 		});
 
@@ -173,7 +172,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter(buttons, [], [], {}, null);
-		await assert.rejects(router.handleComponent(createMockAPI(), {} as any, buttonInteraction("test")), {
+		await assert.rejects(router.handleComponent(createMockBot(), buttonInteraction("test")), {
 			message: "first fails",
 		});
 
@@ -193,7 +192,7 @@ describe("createComponentRouter", () => {
 		];
 
 		const router = createComponentRouter([], [], modals, { onError }, undefined);
-		await router.handleModal(createMockAPI(), {} as any, modalSubmitInteraction("fail", []));
+		await router.handleModal(createMockBot(), modalSubmitInteraction("fail", []));
 
 		assert.strictEqual(onError.mock.callCount(), 1);
 	});

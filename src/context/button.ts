@@ -1,21 +1,19 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { APIMessageComponentInteraction } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { ButtonContext } from "../types/contexts.ts";
 import { createComponentUpdateMethods, createManagedInteractionContext } from "./interaction.ts";
 
 export function createButtonContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIMessageComponentInteraction,
 	params: Record<string, string>,
 ): ButtonContext {
-	const { context: base, controller } = createManagedInteractionContext(api, gateway, interaction);
+	const { context: base, controller } = createManagedInteractionContext(bot, interaction);
 
 	return Object.assign(base, {
 		interaction,
 		customId: interaction.data.custom_id,
 		params,
-		...createComponentUpdateMethods(api, interaction, controller),
+		...createComponentUpdateMethods(bot.api, interaction, controller),
 	}) as ButtonContext;
 }

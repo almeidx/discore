@@ -9,6 +9,7 @@ A lightweight, functional Discord bot framework built on [`@discordjs/core`](htt
 - **Component routing** — Regex-based `customId` matching with named capture groups as `ctx.params`.
 - **Collectors** — `awaitComponent` and `awaitModal` (single, Promise-based) and `collectComponents` (async iterator).
 - **Hooks** — Per-command and global `beforeCommand`/`afterCommand`/`onError` hooks; per-definition `onError` on components, events, and autocomplete.
+- **Bot access** — Every handler and hook context exposes its owning `Bot` as `ctx.bot`.
 - **Command publishing** — `publishCommands` maps definitions to the Discord API format.
 
 ## Requirements
@@ -65,6 +66,18 @@ const message = response.resource?.message;
 ```
 
 Without `with_response: true`, `defer` resolves to `undefined`.
+
+## Bot access
+
+Every context exposes the exact `Bot` instance returned by `createBot()`. This includes command, component,
+modal, autocomplete, collector, event, and hook contexts.
+
+```ts
+const ping = ctx.bot.ping;
+const commands = ctx.bot.commands;
+```
+
+The existing `ctx.api` and `ctx.gateway` properties remain available.
 
 ## Mixed command publishing
 
@@ -167,7 +180,7 @@ await submission.reply({ content: "Thanks for the feedback!" });
 ## Planned improvements
 
 - Support externally managed gateway dispatch.
-- Allow applications to inject typed services into handler contexts or access the owning bot.
+- Allow applications to inject typed services into handler contexts.
 - Configure bot-level response defaults such as allowed mentions.
 - Return callback responses from the remaining initial acknowledgement helpers.
 - Preserve localization metadata throughout command groups and nested subcommand groups.

@@ -10,14 +10,14 @@ import { createModalContext } from "../../src/context/modal.ts";
 import type { ModalContext } from "../../src/types/contexts.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { buttonInteraction, modalSubmitInteraction } from "../fixtures/interactions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 function fakeButtonCtx(customId: string) {
-	return createButtonContext(createMockAPI() as any, {} as any, buttonInteraction(customId), {});
+	return createButtonContext(createMockBot(), buttonInteraction(customId), {});
 }
 
 function fakeModalCtx(customId: string) {
-	return createModalContext(createMockAPI() as any, {} as any, modalSubmitInteraction(customId, []), {});
+	return createModalContext(createMockBot(), modalSubmitInteraction(customId, []), {});
 }
 
 describe("collector-store", () => {

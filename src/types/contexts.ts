@@ -22,11 +22,13 @@ import type {
 	APIInteractionDataResolvedGuildMember,
 	RESTPostAPIInteractionCallbackWithResponseResult,
 } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { ModalFields } from "../modal-fields.ts";
 import type { ComponentInteractionContext } from "./internal.ts";
 
 export interface BaseContext {
 	api: API;
+	readonly bot: Bot;
 	gateway: WebSocketManager;
 }
 

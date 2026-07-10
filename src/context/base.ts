@@ -1,7 +1,6 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
+import type { Bot } from "../bot.ts";
 import type { BaseContext } from "../types/contexts.ts";
 
-export function createBaseContext(api: API, gateway: WebSocketManager): BaseContext {
-	return { api, gateway };
+export function createBaseContext(bot: Bot): BaseContext {
+	return { api: bot.api, bot, gateway: bot.gateway };
 }

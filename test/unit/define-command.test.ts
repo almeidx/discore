@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
+import type { Bot } from "../../src/bot.ts";
 import { defineCommand } from "../../src/definitions/command.ts";
 import { DefinitionType } from "../../src/types/definitions.ts";
 
@@ -8,7 +9,10 @@ describe("defineCommand", () => {
 	it("returns a command definition with correct shape", () => {
 		const cmd = defineCommand({
 			data: { name: "ping", description: "Pong!" },
-			handler: async () => {},
+			handler: async (ctx) => {
+				const bot: Bot = ctx.bot;
+				void bot;
+			},
 		});
 
 		assert.strictEqual(cmd.type, DefinitionType.Command);

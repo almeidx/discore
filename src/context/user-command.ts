@@ -1,6 +1,5 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { APIUserApplicationCommandInteraction } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import { awaitComponent } from "../collectors/await-component.ts";
 import { awaitModal } from "../collectors/await-modal.ts";
 import { collectComponents } from "../collectors/collect-components.ts";
@@ -17,13 +16,12 @@ import type { ComponentInteractionContext } from "../types/internal.ts";
 import { createManagedInteractionContext } from "./interaction.ts";
 
 export function createUserCommandContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIUserApplicationCommandInteraction,
 	collectorStore: CollectorStore<ComponentInteractionContext>,
 	modalCollectorStore: CollectorStore<ModalContext>,
 ): UserCommandContext {
-	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
+	const { context: base } = createManagedInteractionContext(bot, interaction);
 	const targetId = interaction.data.target_id;
 	const targetUser = interaction.data.resolved.users[targetId]!;
 	const targetMember = interaction.data.resolved.members?.[targetId];

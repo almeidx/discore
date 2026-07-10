@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { GatewayDispatchEvents } from "discord-api-types/v10";
-import { createBot } from "../../src/bot.ts";
+import { createBot, type Bot } from "../../src/bot.ts";
 import { defineCommand } from "../../src/definitions/command.ts";
 import { chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockREST } from "../fixtures/mock-api.ts";
@@ -10,7 +10,9 @@ import { createMockGateway } from "../fixtures/mock-gateway.ts";
 
 describe("command flow integration", () => {
 	it("dispatches command through full bot pipeline", async () => {
+		let contextBot: Bot | undefined;
 		const handler = mock.fn(async (ctx: any) => {
+			contextBot = ctx.bot;
 			await ctx.reply({ content: "Pong!" });
 		});
 
@@ -20,7 +22,7 @@ describe("command flow integration", () => {
 		});
 
 		const gateway = createMockGateway();
-		createBot({
+		const bot = createBot({
 			rest: createMockREST(),
 			gateway: gateway as any,
 			commands: [ping],
@@ -32,6 +34,7 @@ describe("command flow integration", () => {
 		await new Promise((r) => setTimeout(r, 50));
 
 		assert.strictEqual(handler.mock.callCount(), 1);
+		assert.strictEqual(contextBot, bot);
 	});
 
 	it("dispatches command with options", async () => {

@@ -1,5 +1,3 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import {
 	InteractionType,
 	ApplicationCommandType,
@@ -13,6 +11,7 @@ import {
 	type APIApplicationCommandAutocompleteInteraction,
 	ComponentType,
 } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { CollectorStore } from "../collectors/collector-store.ts";
 import { createManagedAutocompleteContext } from "../context/autocomplete.ts";
 import { createButtonContext } from "../context/button.ts";
@@ -39,7 +38,7 @@ import { sendErrorResponse, runBeforeInteraction, runAfterInteraction, type Erro
 export type { MissingPermissionsResponseOption } from "../types/bot-options.ts";
 
 export interface InteractionRouter {
-	handle(api: API, gateway: WebSocketManager, interaction: APIInteraction): Promise<void>;
+	handle(bot: Bot, interaction: APIInteraction): Promise<void>;
 }
 
 export function createInteractionRouter(config: {
@@ -156,11 +155,7 @@ export function createInteractionRouter(config: {
 		}
 	}
 
-	async function handleCommand(
-		api: API,
-		gateway: WebSocketManager,
-		interaction: APIChatInputApplicationCommandInteraction,
-	): Promise<void> {
+	async function handleCommand(bot: Bot, interaction: APIChatInputApplicationCommandInteraction): Promise<void> {
 		const commandName = interaction.data.name;
 
 		let def: CommandDefinition | undefined;
@@ -184,7 +179,7 @@ export function createInteractionRouter(config: {
 
 		if (!def) return;
 
-		const ctx = createCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+		const ctx = createCommandContext(bot, interaction, collectorStore, modalCollectorStore);
 		const requiredPerms = (group?.requiredBotPermissions ?? 0n) | (def.requiredBotPermissions ?? 0n);
 		await runCommandPipeline(
 			ctx,
@@ -196,15 +191,11 @@ export function createInteractionRouter(config: {
 		);
 	}
 
-	async function handleUserCommand(
-		api: API,
-		gateway: WebSocketManager,
-		interaction: APIUserApplicationCommandInteraction,
-	): Promise<void> {
+	async function handleUserCommand(bot: Bot, interaction: APIUserApplicationCommandInteraction): Promise<void> {
 		const def = userCommands.get(interaction.data.name);
 		if (!def) return;
 
-		const ctx = createUserCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+		const ctx = createUserCommandContext(bot, interaction, collectorStore, modalCollectorStore);
 		await runCommandPipeline(
 			ctx,
 			() => def.handler(ctx),
@@ -214,15 +205,11 @@ export function createInteractionRouter(config: {
 		);
 	}
 
-	async function handleMessageCommand(
-		api: API,
-		gateway: WebSocketManager,
-		interaction: APIMessageApplicationCommandInteraction,
-	): Promise<void> {
+	async function handleMessageCommand(bot: Bot, interaction: APIMessageApplicationCommandInteraction): Promise<void> {
 		const def = messageCommands.get(interaction.data.name);
 		if (!def) return;
 
-		const ctx = createMessageCommandContext(api, gateway, interaction, collectorStore, modalCollectorStore);
+		const ctx = createMessageCommandContext(bot, interaction, collectorStore, modalCollectorStore);
 		await runCommandPipeline(
 			ctx,
 			() => def.handler(ctx),
@@ -233,11 +220,10 @@ export function createInteractionRouter(config: {
 	}
 
 	async function handleAutocomplete(
-		api: API,
-		gateway: WebSocketManager,
+		bot: Bot,
 		interaction: APIApplicationCommandAutocompleteInteraction,
 	): Promise<void> {
-		const { context: ctx, hasResponded } = createManagedAutocompleteContext(api, gateway, interaction);
+		const { context: ctx, hasResponded } = createManagedAutocompleteContext(bot, interaction);
 
 		if (!(await runBeforeInteraction(hooks, ctx))) return;
 
@@ -275,64 +261,56 @@ export function createInteractionRouter(config: {
 		}
 	}
 
-	function handleComponentForCollectors(
-		api: API,
-		gateway: WebSocketManager,
-		interaction: APIMessageComponentInteraction,
-	): boolean {
+	function handleComponentForCollectors(bot: Bot, interaction: APIMessageComponentInteraction): boolean {
 		const isButton = interaction.data.component_type === ComponentType.Button;
 
 		let ctx: ComponentInteractionContext;
 		if (isButton) {
-			ctx = createButtonContext(api, gateway, interaction, {});
+			ctx = createButtonContext(bot, interaction, {});
 		} else {
-			ctx = createSelectMenuContext(api, gateway, interaction, {});
+			ctx = createSelectMenuContext(bot, interaction, {});
 		}
 
 		return collectorStore.dispatch(ctx);
 	}
 
-	function handleModalForCollectors(
-		api: API,
-		gateway: WebSocketManager,
-		interaction: APIModalSubmitInteraction,
-	): boolean {
-		const ctx = createModalContext(api, gateway, interaction, {});
+	function handleModalForCollectors(bot: Bot, interaction: APIModalSubmitInteraction): boolean {
+		const ctx = createModalContext(bot, interaction, {});
 		return modalCollectorStore.dispatch(ctx);
 	}
 
 	return {
-		async handle(api, gateway, interaction) {
+		async handle(bot, interaction) {
 			switch (interaction.type) {
 				case InteractionType.ApplicationCommand: {
 					if (isChatInputCommand(interaction)) {
-						await handleCommand(api, gateway, interaction);
+						await handleCommand(bot, interaction);
 					} else if (isUserAppCommand(interaction)) {
-						await handleUserCommand(api, gateway, interaction);
+						await handleUserCommand(bot, interaction);
 					} else if (isMessageAppCommand(interaction)) {
-						await handleMessageCommand(api, gateway, interaction);
+						await handleMessageCommand(bot, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.MessageComponent: {
-					const handledByCollector = handleComponentForCollectors(api, gateway, interaction);
+					const handledByCollector = handleComponentForCollectors(bot, interaction);
 					if (!handledByCollector) {
-						await componentRouter.handleComponent(api, gateway, interaction);
+						await componentRouter.handleComponent(bot, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.ModalSubmit: {
-					const handledByCollector = handleModalForCollectors(api, gateway, interaction);
+					const handledByCollector = handleModalForCollectors(bot, interaction);
 					if (!handledByCollector) {
-						await componentRouter.handleModal(api, gateway, interaction);
+						await componentRouter.handleModal(bot, interaction);
 					}
 					break;
 				}
 
 				case InteractionType.ApplicationCommandAutocomplete: {
-					await handleAutocomplete(api, gateway, interaction);
+					await handleAutocomplete(bot, interaction);
 					break;
 				}
 			}

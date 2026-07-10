@@ -7,7 +7,7 @@ import type { ModalContext } from "../../src/types/contexts.ts";
 import { DefinitionType, type CommandDefinition } from "../../src/types/definitions.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { chatInputInteraction } from "../fixtures/interactions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("hooks", () => {
 	function createRouter(cmd: CommandDefinition, globalHooks = {}) {
@@ -28,10 +28,13 @@ describe("hooks", () => {
 
 	it("both global and per-command hooks run (global first)", async () => {
 		const order: string[] = [];
-		const globalBefore = mock.fn(async () => {
+		const bot = createMockBot();
+		const globalBefore = mock.fn(async (ctx) => {
+			assert.strictEqual(ctx.bot, bot);
 			order.push("global");
 		});
-		const localBefore = mock.fn(async () => {
+		const localBefore = mock.fn(async (ctx) => {
+			assert.strictEqual(ctx.bot, bot);
 			order.push("local");
 		});
 
@@ -43,7 +46,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd, { beforeCommand: globalBefore });
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await router.handle(bot, chatInputInteraction("test"));
 
 		assert.strictEqual(globalBefore.mock.callCount(), 1);
 		assert.strictEqual(localBefore.mock.callCount(), 1);
@@ -62,7 +65,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd, { beforeCommand: async () => false });
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await router.handle(createMockBot(), chatInputInteraction("test"));
 
 		assert.strictEqual(localBefore.mock.callCount(), 0);
 		assert.strictEqual(handler.mock.callCount(), 0);
@@ -82,7 +85,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd);
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await router.handle(createMockBot(), chatInputInteraction("test"));
 
 		assert.strictEqual(afterCommand.mock.callCount(), 0);
 	});
@@ -100,7 +103,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd);
-		await assert.rejects(router.handle(createMockAPI(), {} as any, chatInputInteraction("test")), {
+		await assert.rejects(router.handle(createMockBot(), chatInputInteraction("test")), {
 			message: "boom",
 		});
 
@@ -119,7 +122,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd, { afterInteraction });
-		await assert.rejects(router.handle(createMockAPI(), {} as any, chatInputInteraction("test")), {
+		await assert.rejects(router.handle(createMockBot(), chatInputInteraction("test")), {
 			message: "boom",
 		});
 
@@ -136,7 +139,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd, { afterCommand });
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await router.handle(createMockBot(), chatInputInteraction("test"));
 
 		assert.strictEqual(afterCommand.mock.callCount(), 1);
 	});
@@ -158,7 +161,7 @@ describe("hooks", () => {
 		};
 
 		const router = createRouter(cmd, { afterCommand: globalAfter });
-		await router.handle(createMockAPI(), {} as any, chatInputInteraction("test"));
+		await router.handle(createMockBot(), chatInputInteraction("test"));
 
 		assert.strictEqual(localAfter.mock.callCount(), 1);
 		assert.strictEqual(globalAfter.mock.callCount(), 1);

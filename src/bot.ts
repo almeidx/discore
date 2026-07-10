@@ -127,40 +127,9 @@ export function createBot(options: CreateBotOptions): Bot {
 		missingPermissionsResponse: options.missingPermissionsResponse,
 	});
 
-	async function dispatchListener(payload: GatewayDispatchPayload, shardId: number) {
-		const errors: unknown[] = [];
-
-		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
-			try {
-				await interactionRouter.handle(api, gateway, payload.d);
-			} catch (error) {
-				errors.push(error);
-			}
-		}
-
-		try {
-			await eventRouter.dispatch(payload.t, payload.d, api, gateway, shardId);
-		} catch (error) {
-			errors.push(error);
-		}
-
-		if (errors.length === 1) {
-			throw errors[0];
-		} else if (errors.length > 1) {
-			throw new AggregateError(errors, "Dispatch failed");
-		}
-	}
-
 	const pings = new Collection<number, number>();
 
-	function heartbeatCompleteListener({ latency }: { latency: number }, shardId: number) {
-		pings.set(shardId, latency);
-	}
-
-	gateway.on(WebSocketShardEvents.HeartbeatComplete, heartbeatCompleteListener);
-	gateway.on(WebSocketShardEvents.Dispatch, dispatchListener);
-
-	return {
+	const bot: Bot = {
 		api,
 		gateway,
 		get ping() {
@@ -250,4 +219,37 @@ export function createBot(options: CreateBotOptions): Bot {
 			gateway.off(WebSocketShardEvents.Dispatch, dispatchListener);
 		},
 	};
+
+	async function dispatchListener(payload: GatewayDispatchPayload, shardId: number) {
+		const errors: unknown[] = [];
+
+		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
+			try {
+				await interactionRouter.handle(bot, payload.d);
+			} catch (error) {
+				errors.push(error);
+			}
+		}
+
+		try {
+			await eventRouter.dispatch(payload.t, payload.d, bot, shardId);
+		} catch (error) {
+			errors.push(error);
+		}
+
+		if (errors.length === 1) {
+			throw errors[0];
+		} else if (errors.length > 1) {
+			throw new AggregateError(errors, "Dispatch failed");
+		}
+	}
+
+	function heartbeatCompleteListener({ latency }: { latency: number }, shardId: number) {
+		pings.set(shardId, latency);
+	}
+
+	gateway.on(WebSocketShardEvents.HeartbeatComplete, heartbeatCompleteListener);
+	gateway.on(WebSocketShardEvents.Dispatch, dispatchListener);
+
+	return bot;
 }

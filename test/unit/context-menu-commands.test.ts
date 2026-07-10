@@ -13,12 +13,11 @@ import {
 } from "../../src/types/definitions.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { userCommandInteraction, messageCommandInteraction } from "../fixtures/interactions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("context menu commands", () => {
 	function setup(userCmds: UserCommandDefinition[] = [], msgCmds: MessageCommandDefinition[] = []) {
-		const api = createMockAPI();
-		const gateway = {} as any;
+		const bot = createMockBot();
 
 		const userCommands = new Map<string, UserCommandDefinition>();
 		for (const cmd of userCmds) userCommands.set(cmd.data.name, cmd);
@@ -40,7 +39,7 @@ describe("context menu commands", () => {
 			missingPermissionsResponse: undefined,
 		});
 
-		return { api, gateway, router };
+		return { bot, router };
 	}
 
 	it("defineUserCommand produces correct definition", () => {
@@ -70,8 +69,8 @@ describe("context menu commands", () => {
 			handler,
 		});
 
-		const { api, gateway, router } = setup([cmd]);
-		await router.handle(api, gateway, userCommandInteraction("User Info", "777777777777777777"));
+		const { bot, router } = setup([cmd]);
+		await router.handle(bot, userCommandInteraction("User Info", "777777777777777777"));
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
@@ -85,8 +84,8 @@ describe("context menu commands", () => {
 			},
 		});
 
-		const { api, gateway, router } = setup([cmd]);
-		await router.handle(api, gateway, userCommandInteraction("User Info", "777777777777777777"));
+		const { bot, router } = setup([cmd]);
+		await router.handle(bot, userCommandInteraction("User Info", "777777777777777777"));
 
 		assert.strictEqual(receivedTargetId, "777777777777777777");
 	});
@@ -98,8 +97,8 @@ describe("context menu commands", () => {
 			handler,
 		});
 
-		const { api, gateway, router } = setup([], [cmd]);
-		await router.handle(api, gateway, messageCommandInteraction("Bookmark", "888888888888888888"));
+		const { bot, router } = setup([], [cmd]);
+		await router.handle(bot, messageCommandInteraction("Bookmark", "888888888888888888"));
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
@@ -113,14 +112,14 @@ describe("context menu commands", () => {
 			},
 		});
 
-		const { api, gateway, router } = setup([], [cmd]);
-		await router.handle(api, gateway, messageCommandInteraction("Bookmark", "888888888888888888"));
+		const { bot, router } = setup([], [cmd]);
+		await router.handle(bot, messageCommandInteraction("Bookmark", "888888888888888888"));
 
 		assert.strictEqual(receivedContent, "Hello world");
 	});
 
 	it("does nothing for unknown user command", async () => {
-		const { api, gateway, router } = setup();
-		await router.handle(api, gateway, userCommandInteraction("Unknown", "777777777777777777"));
+		const { bot, router } = setup();
+		await router.handle(bot, userCommandInteraction("Unknown", "777777777777777777"));
 	});
 });

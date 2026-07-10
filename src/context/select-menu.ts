@@ -1,22 +1,20 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { APIMessageComponentInteraction } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { SelectMenuContext } from "../types/contexts.ts";
 import { createComponentUpdateMethods, createManagedInteractionContext } from "./interaction.ts";
 
 export function createSelectMenuContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIMessageComponentInteraction,
 	params: Record<string, string>,
 ): SelectMenuContext {
-	const { context: base, controller } = createManagedInteractionContext(api, gateway, interaction);
+	const { context: base, controller } = createManagedInteractionContext(bot, interaction);
 
 	return Object.assign(base, {
 		interaction,
 		customId: interaction.data.custom_id,
 		params,
 		values: "values" in interaction.data ? (interaction.data.values ?? []) : [],
-		...createComponentUpdateMethods(api, interaction, controller),
+		...createComponentUpdateMethods(bot.api, interaction, controller),
 	}) as SelectMenuContext;
 }

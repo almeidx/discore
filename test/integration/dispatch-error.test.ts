@@ -18,6 +18,7 @@ import { DefinitionType, type AutocompleteDefinition, type CommandDefinition } f
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { autocompleteInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI, createMockREST } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 import { createMockGateway } from "../fixtures/mock-gateway.ts";
 
 function getDispatchListener(gateway: ReturnType<typeof createMockGateway>) {
@@ -146,7 +147,7 @@ describe("dispatch error isolation", () => {
 		});
 		const router = createRouter([command]);
 
-		await assert.rejects(router.handle(api, {} as WebSocketManager, chatInputInteraction("test")), {
+		await assert.rejects(router.handle(createMockBot(api), chatInputInteraction("test")), {
 			message: "boom",
 		});
 	});
@@ -168,8 +169,7 @@ describe("dispatch error isolation", () => {
 
 		await assert.rejects(
 			router.handle(
-				api,
-				{} as WebSocketManager,
+				createMockBot(api),
 				autocompleteInteraction("search", {
 					name: "query",
 					value: "x",

@@ -1,19 +1,22 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createCollectorStore } from "../../src/collectors/collector-store.ts";
+import { createAutocompleteContext } from "../../src/context/autocomplete.ts";
 import { createButtonContext } from "../../src/context/button.ts";
 import { createCommandContext } from "../../src/context/command.ts";
+import { createEventContext } from "../../src/context/event.ts";
 import { createInteractionContext } from "../../src/context/interaction.ts";
 import type { InteractionCallbackResponse, InteractionContext, ModalContext } from "../../src/types/contexts.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
-import { buttonInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
+import { autocompleteInteraction, buttonInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("createInteractionContext", () => {
 	it("tracks replied state after reply", async () => {
 		const api = createMockAPI();
 		const interaction = chatInputInteraction("test");
-		const ctx = createInteractionContext(api, {} as any, interaction);
+		const ctx = createInteractionContext(createMockBot(api), interaction);
 
 		assert.strictEqual(ctx.replied, false);
 		assert.strictEqual(ctx.deferred, false);
@@ -27,7 +30,7 @@ describe("createInteractionContext", () => {
 	it("auto-delegates to followUp when already replied", async () => {
 		const api = createMockAPI();
 		const interaction = chatInputInteraction("test");
-		const ctx = createInteractionContext(api, {} as any, interaction);
+		const ctx = createInteractionContext(createMockBot(api), interaction);
 
 		await ctx.reply({ content: "first" });
 		await ctx.reply({ content: "second" });
@@ -39,7 +42,7 @@ describe("createInteractionContext", () => {
 	it("tracks deferred state", async () => {
 		const api = createMockAPI();
 		const interaction = chatInputInteraction("test");
-		const ctx = createInteractionContext(api, {} as any, interaction);
+		const ctx = createInteractionContext(createMockBot(api), interaction);
 
 		const response = await ctx.defer();
 
@@ -52,7 +55,7 @@ describe("createInteractionContext", () => {
 	it("returns the interaction callback response when requested", async () => {
 		const api = createMockAPI();
 		const interaction = chatInputInteraction("test");
-		const ctx = createInteractionContext(api, {} as any, interaction);
+		const ctx = createInteractionContext(createMockBot(api), interaction);
 		const callback = {
 			interaction: { id: interaction.id, type: interaction.type },
 		} as InteractionCallbackResponse;
@@ -70,7 +73,7 @@ describe("createInteractionContext", () => {
 	it("tracks replied state after showModal", async () => {
 		const api = createMockAPI();
 		const interaction = chatInputInteraction("test");
-		const ctx = createInteractionContext(api, {} as any, interaction);
+		const ctx = createInteractionContext(createMockBot(api), interaction);
 
 		await ctx.showModal({ title: "Test", custom_id: "test", components: [] });
 
@@ -81,8 +84,7 @@ describe("createInteractionContext", () => {
 	it("preserves live reply state in derived command contexts", async () => {
 		const api = createMockAPI();
 		const ctx = createCommandContext(
-			api,
-			{} as any,
+			createMockBot(api),
 			chatInputInteraction("test"),
 			createCollectorStore<ComponentInteractionContext>(),
 			createCollectorStore<ModalContext>(),
@@ -98,7 +100,7 @@ describe("createInteractionContext", () => {
 
 	it("marks component contexts as acknowledged after update", async () => {
 		const api = createMockAPI();
-		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		const ctx = createButtonContext(createMockBot(api), buttonInteraction("confirm"), {});
 
 		await ctx.update({ content: "updated" });
 
@@ -113,13 +115,36 @@ describe("createInteractionContext", () => {
 
 	it("marks component contexts as deferred after deferUpdate", async () => {
 		const api = createMockAPI();
-		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		const ctx = createButtonContext(createMockBot(api), buttonInteraction("confirm"), {});
 
 		await ctx.deferUpdate();
 
 		assert.strictEqual(ctx.replied, true);
 		assert.strictEqual(ctx.deferred, true);
 		assert.strictEqual(api.interactions.deferMessageUpdate.mock.callCount(), 1);
+	});
+
+	it("exposes the same bot instance on base and derived interaction contexts", () => {
+		const bot = createMockBot();
+		const interactionCtx = createInteractionContext(bot, chatInputInteraction("test"));
+		const commandCtx = createCommandContext(
+			bot,
+			chatInputInteraction("test"),
+			createCollectorStore<ComponentInteractionContext>(),
+			createCollectorStore<ModalContext>(),
+		);
+		const buttonCtx = createButtonContext(bot, buttonInteraction("confirm"), {});
+		const autocompleteCtx = createAutocompleteContext(
+			bot,
+			autocompleteInteraction("search", { name: "query", type: 3, value: "test" }),
+		);
+		const eventCtx = createEventContext(bot, { content: "test" }, 0);
+
+		assert.strictEqual(interactionCtx.bot, bot);
+		assert.strictEqual(commandCtx.bot, bot);
+		assert.strictEqual(buttonCtx.bot, bot);
+		assert.strictEqual(autocompleteCtx.bot, bot);
+		assert.strictEqual(eventCtx.bot, bot);
 	});
 });
 
@@ -142,7 +167,7 @@ void assertDeferReturnTypes;
 describe("interaction state re-entrancy", () => {
 	it("concurrent replies send one initial reply and one follow-up", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 
 		await Promise.all([ctx.reply({ content: "a" }), ctx.reply({ content: "b" })]);
 
@@ -152,7 +177,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("failed initial reply rolls back so a retry replies instead of following up", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 		api.interactions.reply.mock.mockImplementationOnce(async () => {
 			throw new Error("network");
 		});
@@ -168,7 +193,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("defer after reply rejects with a descriptive error", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 
 		await ctx.reply({ content: "hello" });
 
@@ -178,7 +203,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("showModal after reply rejects with a descriptive error", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 
 		await ctx.reply({ content: "hello" });
 
@@ -190,7 +215,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("update after reply rejects with a descriptive error", async () => {
 		const api = createMockAPI();
-		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		const ctx = createButtonContext(createMockBot(api), buttonInteraction("confirm"), {});
 
 		await ctx.reply({ content: "hello" });
 
@@ -200,7 +225,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("failed defer rolls back both flags", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 		api.interactions.defer.mock.mockImplementationOnce(async () => {
 			throw new Error("network");
 		});
@@ -217,7 +242,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("failed showModal rolls back", async () => {
 		const api = createMockAPI();
-		const ctx = createInteractionContext(api, {} as any, chatInputInteraction("test"));
+		const ctx = createInteractionContext(createMockBot(api), chatInputInteraction("test"));
 		api.interactions.createModal.mock.mockImplementationOnce(async () => {
 			throw new Error("network");
 		});
@@ -229,7 +254,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("failed update rolls back", async () => {
 		const api = createMockAPI();
-		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		const ctx = createButtonContext(createMockBot(api), buttonInteraction("confirm"), {});
 		api.interactions.updateMessage.mock.mockImplementationOnce(async () => {
 			throw new Error("network");
 		});
@@ -247,7 +272,7 @@ describe("interaction state re-entrancy", () => {
 
 	it("failed deferUpdate rolls back", async () => {
 		const api = createMockAPI();
-		const ctx = createButtonContext(api, {} as any, buttonInteraction("confirm"), {});
+		const ctx = createButtonContext(createMockBot(api), buttonInteraction("confirm"), {});
 		api.interactions.deferMessageUpdate.mock.mockImplementationOnce(async () => {
 			throw new Error("network");
 		});

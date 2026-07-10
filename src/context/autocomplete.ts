@@ -1,11 +1,11 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type {
 	APIApplicationCommandAutocompleteInteraction,
 	APIApplicationCommandOptionChoice,
 } from "discord-api-types/v10";
 import { ApplicationCommandOptionType } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { AutocompleteContext } from "../types/contexts.ts";
+import { createBaseContext } from "./base.ts";
 
 export interface ManagedAutocompleteContext {
 	context: AutocompleteContext;
@@ -13,16 +13,15 @@ export interface ManagedAutocompleteContext {
 }
 
 export function createManagedAutocompleteContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIApplicationCommandAutocompleteInteraction,
 ): ManagedAutocompleteContext {
+	const { api } = bot;
 	const { focused, options, subcommand, subcommandGroup } = parseAutocompleteOptions(interaction);
 	let responded = false;
 
 	const context: AutocompleteContext = {
-		api,
-		gateway,
+		...createBaseContext(bot),
 		interaction,
 		focused,
 		options,
@@ -46,11 +45,10 @@ export function createManagedAutocompleteContext(
 }
 
 export function createAutocompleteContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIApplicationCommandAutocompleteInteraction,
 ): AutocompleteContext {
-	return createManagedAutocompleteContext(api, gateway, interaction).context;
+	return createManagedAutocompleteContext(bot, interaction).context;
 }
 
 interface AutocompleteParseResult {

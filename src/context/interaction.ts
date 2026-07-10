@@ -7,9 +7,10 @@ import type {
 	CreateModalResponseOptions,
 	CreateInteractionUpdateMessageResponseOptions,
 } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { APIInteraction, APIMessage } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import type { InteractionCallbackResponse, InteractionContext } from "../types/contexts.ts";
+import { createBaseContext } from "./base.ts";
 
 interface InteractionStateController {
 	isReplied(): boolean;
@@ -23,11 +24,8 @@ export interface ManagedInteractionContext {
 	controller: InteractionStateController;
 }
 
-export function createManagedInteractionContext(
-	api: API,
-	gateway: WebSocketManager,
-	interaction: APIInteraction,
-): ManagedInteractionContext {
+export function createManagedInteractionContext(bot: Bot, interaction: APIInteraction): ManagedInteractionContext {
+	const { api } = bot;
 	let replied = false;
 	let deferred = false;
 
@@ -71,8 +69,7 @@ export function createManagedInteractionContext(
 	}
 
 	const context: InteractionContext = {
-		api,
-		gateway,
+		...createBaseContext(bot),
 		interaction,
 
 		get replied() {
@@ -166,10 +163,6 @@ export function createComponentUpdateMethods(
 	};
 }
 
-export function createInteractionContext(
-	api: API,
-	gateway: WebSocketManager,
-	interaction: APIInteraction,
-): InteractionContext {
-	return createManagedInteractionContext(api, gateway, interaction).context;
+export function createInteractionContext(bot: Bot, interaction: APIInteraction): InteractionContext {
+	return createManagedInteractionContext(bot, interaction).context;
 }

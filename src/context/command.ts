@@ -1,6 +1,5 @@
-import type { API } from "@discordjs/core";
-import type { WebSocketManager } from "@discordjs/ws";
 import type { APIChatInputApplicationCommandInteraction } from "discord-api-types/v10";
+import type { Bot } from "../bot.ts";
 import { awaitComponent } from "../collectors/await-component.ts";
 import { awaitModal } from "../collectors/await-modal.ts";
 import { collectComponents } from "../collectors/collect-components.ts";
@@ -18,13 +17,12 @@ import type { ComponentInteractionContext } from "../types/internal.ts";
 import { createManagedInteractionContext } from "./interaction.ts";
 
 export function createCommandContext(
-	api: API,
-	gateway: WebSocketManager,
+	bot: Bot,
 	interaction: APIChatInputApplicationCommandInteraction,
 	collectorStore: CollectorStore<ComponentInteractionContext>,
 	modalCollectorStore: CollectorStore<ModalContext>,
 ): CommandContext {
-	const { context: base } = createManagedInteractionContext(api, gateway, interaction);
+	const { context: base } = createManagedInteractionContext(bot, interaction);
 	const { options } = parseOptions(interaction);
 
 	return Object.assign(base, {

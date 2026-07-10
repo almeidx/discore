@@ -8,11 +8,12 @@ import { DefinitionType, type AutocompleteDefinition, type CommandDefinition } f
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { autocompleteInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
+import { createMockBot } from "../fixtures/mock-bot.ts";
 
 describe("createInteractionRouter", () => {
 	function setup(commands: CommandDefinition[] = [], overrides: Record<string, unknown> = {}) {
 		const api = createMockAPI();
-		const gateway = {} as any;
+		const bot = createMockBot(api);
 		const collectorStore = createCollectorStore<ComponentInteractionContext>();
 		const componentRouter = createComponentRouter([], [], [], {}, undefined);
 
@@ -36,7 +37,7 @@ describe("createInteractionRouter", () => {
 			...overrides,
 		});
 
-		return { api, gateway, router, collectorStore };
+		return { api, bot, router, collectorStore };
 	}
 
 	it("dispatches chat input command to handler", async () => {
@@ -47,19 +48,19 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ping");
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
 
 	it("does nothing for unknown command", async () => {
-		const { api, gateway, router } = setup();
+		const { bot, router } = setup();
 		const interaction = chatInputInteraction("unknown");
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 	});
 
 	it("runs beforeCommand hook and can cancel", async () => {
@@ -73,8 +74,8 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
-		await router.handle(api, gateway, chatInputInteraction("test"));
+		const { bot, router } = setup([cmd]);
+		await router.handle(bot, chatInputInteraction("test"));
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 	});
@@ -90,8 +91,8 @@ describe("createInteractionRouter", () => {
 			},
 		};
 
-		const { api, gateway, router } = setup([cmd]);
-		await assert.rejects(router.handle(api, gateway, chatInputInteraction("test")), { message: "boom" });
+		const { bot, router } = setup([cmd]);
+		await assert.rejects(router.handle(bot, chatInputInteraction("test")), { message: "boom" });
 
 		assert.strictEqual(onError.mock.callCount(), 1);
 	});
@@ -106,7 +107,7 @@ describe("createInteractionRouter", () => {
 		};
 
 		const api = createMockAPI();
-		const gateway = {} as any;
+		const bot = createMockBot(api);
 		const router = createInteractionRouter({
 			commands: new Map([["test", cmd]]),
 			commandGroups: new Map(),
@@ -121,7 +122,7 @@ describe("createInteractionRouter", () => {
 			missingPermissionsResponse: undefined,
 		});
 
-		await assert.rejects(router.handle(api, gateway, chatInputInteraction("test")), { message: "boom" });
+		await assert.rejects(router.handle(bot, chatInputInteraction("test")), { message: "boom" });
 
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
 	});
@@ -139,7 +140,7 @@ describe("createInteractionRouter", () => {
 		};
 
 		const api = createMockAPI();
-		const gateway = {} as any;
+		const bot = createMockBot(api);
 		const router = createInteractionRouter({
 			commands: new Map([["test", cmd]]),
 			commandGroups: new Map(),
@@ -154,7 +155,7 @@ describe("createInteractionRouter", () => {
 			missingPermissionsResponse: undefined,
 		});
 
-		await router.handle(api, gateway, chatInputInteraction("test"));
+		await router.handle(bot, chatInputInteraction("test"));
 
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
 	});
@@ -168,11 +169,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 	});
@@ -186,11 +187,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "4";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
@@ -210,11 +211,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { api, bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 		assert.strictEqual(receivedMissing, 4n);
@@ -231,11 +232,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
@@ -251,7 +252,7 @@ describe("createInteractionRouter", () => {
 		};
 
 		const api = createMockAPI();
-		const gateway = {} as any;
+		const bot = createMockBot(api);
 		const router = createInteractionRouter({
 			commands: new Map([["ban", cmd]]),
 			commandGroups: new Map(),
@@ -269,7 +270,7 @@ describe("createInteractionRouter", () => {
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 		assert.strictEqual(globalOnMissing.mock.callCount(), 1);
@@ -289,7 +290,7 @@ describe("createInteractionRouter", () => {
 			handler: async () => {},
 		};
 
-		const { api, gateway, router } = setup([cmd], {
+		const { api, bot, router } = setup([cmd], {
 			hooks: {
 				onMissingBotPermissions: async () => {
 					order.push("global");
@@ -299,7 +300,7 @@ describe("createInteractionRouter", () => {
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.deepStrictEqual(order, ["global", "command"]);
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
@@ -319,11 +320,11 @@ describe("createInteractionRouter", () => {
 			handler: async () => {},
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("test");
 		interaction.app_permissions = "4"; // has BanMembers, missing KickMembers
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(receivedMissing, 8n);
 	});
@@ -337,13 +338,13 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd], {
+		const { api, bot, router } = setup([cmd], {
 			missingPermissionsResponse: { content: "No perms!", flags: 64 },
 		});
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
@@ -358,11 +359,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { api, bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 0);
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
@@ -378,7 +379,7 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd], {
+		const { api, bot, router } = setup([cmd], {
 			missingPermissionsResponse: (_ctx: unknown, missing: bigint) => {
 				receivedMissing = missing;
 				return { content: "Missing!", flags: 64 };
@@ -387,7 +388,7 @@ describe("createInteractionRouter", () => {
 		const interaction = chatInputInteraction("ban");
 		interaction.app_permissions = "0";
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(receivedMissing, 4n);
 		assert.strictEqual(api.interactions.reply.mock.callCount(), 1);
@@ -402,11 +403,11 @@ describe("createInteractionRouter", () => {
 			handler,
 		};
 
-		const { api, gateway, router } = setup([cmd]);
+		const { bot, router } = setup([cmd]);
 		const interaction = chatInputInteraction("test");
 		(interaction as any).app_permissions = undefined;
 
-		await router.handle(api, gateway, interaction);
+		await router.handle(bot, interaction);
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
@@ -414,6 +415,7 @@ describe("createInteractionRouter", () => {
 	it("routes autocomplete errors through the global error hook, responds with empty choices, and rethrows", async () => {
 		const onError = mock.fn(async () => {});
 		const api = createMockAPI();
+		const bot = createMockBot(api);
 		const router = createInteractionRouter({
 			commands: new Map(),
 			commandGroups: new Map(),
@@ -438,7 +440,7 @@ describe("createInteractionRouter", () => {
 		});
 
 		await assert.rejects(
-			router.handle(api, {} as any, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
+			router.handle(bot, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
 			{
 				message: "boom",
 			},
@@ -469,7 +471,7 @@ describe("createInteractionRouter", () => {
 			},
 		];
 
-		const { api, gateway, router } = setup([], {
+		const { api, bot, router } = setup([], {
 			autocompletes,
 			hooks: {
 				onError: async () => {
@@ -479,7 +481,7 @@ describe("createInteractionRouter", () => {
 		});
 
 		await assert.rejects(
-			router.handle(api, gateway, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
+			router.handle(bot, autocompleteInteraction("search", { name: "query", value: "x", type: 3 })),
 			{
 				message: "boom",
 			},
@@ -505,12 +507,12 @@ describe("createInteractionRouter", () => {
 			},
 		];
 
-		const { api, gateway, router } = setup([], {
+		const { api, bot, router } = setup([], {
 			autocompletes,
 			hooks: { onError },
 		});
 
-		await router.handle(api, gateway, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
+		await router.handle(bot, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
 
 		assert.strictEqual(onError.mock.callCount(), 0);
 		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 0);
@@ -519,6 +521,7 @@ describe("createInteractionRouter", () => {
 	it("does not rethrow autocomplete errors when the global error hook handles them", async () => {
 		const onError = mock.fn(async () => false);
 		const api = createMockAPI();
+		const bot = createMockBot(api);
 		const router = createInteractionRouter({
 			commands: new Map(),
 			commandGroups: new Map(),
@@ -542,7 +545,7 @@ describe("createInteractionRouter", () => {
 			missingPermissionsResponse: undefined,
 		});
 
-		await router.handle(api, {} as any, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
+		await router.handle(bot, autocompleteInteraction("search", { name: "query", value: "x", type: 3 }));
 
 		assert.strictEqual(onError.mock.callCount(), 1);
 		assert.strictEqual(api.interactions.createAutocompleteResponse.mock.callCount(), 0);
