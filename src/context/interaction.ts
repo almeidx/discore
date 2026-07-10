@@ -9,7 +9,7 @@ import type {
 } from "@discordjs/core";
 import type { WebSocketManager } from "@discordjs/ws";
 import type { APIInteraction, APIMessage } from "discord-api-types/v10";
-import type { InteractionContext } from "../types/contexts.ts";
+import type { InteractionCallbackResponse, InteractionContext } from "../types/contexts.ts";
 
 interface InteractionStateController {
 	isReplied(): boolean;
@@ -51,6 +51,25 @@ export function createManagedInteractionContext(
 		},
 	};
 
+	async function defer(
+		data: CreateInteractionDeferResponseOptions & { with_response: true },
+	): Promise<InteractionCallbackResponse>;
+	async function defer(data?: CreateInteractionDeferResponseOptions & { with_response?: false }): Promise<undefined>;
+	async function defer(data?: CreateInteractionDeferResponseOptions): Promise<InteractionCallbackResponse | undefined>;
+	async function defer(data?: CreateInteractionDeferResponseOptions): Promise<InteractionCallbackResponse | undefined> {
+		if (replied) {
+			throw new Error("Interaction was already acknowledged; defer() must be the first response");
+		}
+		controller.markDeferred();
+		try {
+			return await api.interactions.defer(interaction.id, interaction.token, data);
+		} catch (error) {
+			replied = false;
+			deferred = false;
+			throw error;
+		}
+	}
+
 	const context: InteractionContext = {
 		api,
 		gateway,
@@ -78,19 +97,7 @@ export function createManagedInteractionContext(
 			}
 		},
 
-		async defer(data?: CreateInteractionDeferResponseOptions): Promise<void> {
-			if (replied) {
-				throw new Error("Interaction was already acknowledged; defer() must be the first response");
-			}
-			controller.markDeferred();
-			try {
-				await api.interactions.defer(interaction.id, interaction.token, data);
-			} catch (error) {
-				replied = false;
-				deferred = false;
-				throw error;
-			}
-		},
+		defer,
 
 		async followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage> {
 			return api.interactions.followUp(interaction.application_id, interaction.token, data);

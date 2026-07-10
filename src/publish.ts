@@ -23,15 +23,15 @@ export interface PublishCommandsOptions {
 	guildId?: string;
 }
 
-type CommandPayload =
+export type CommandPayload =
 	| RESTPostAPIChatInputApplicationCommandsJSONBody
 	| RESTPostAPIContextMenuApplicationCommandsJSONBody;
 
-function commandToPayload(cmd: CommandDefinition): CommandPayload {
+function chatInputCommandToPayload(cmd: CommandDefinition): CommandPayload {
 	return {
 		...cmd.data,
 		type: ApplicationCommandType.ChatInput,
-		options: cmd.data.options as APIApplicationCommandOption[],
+		options: [...cmd.data.options] as APIApplicationCommandOption[],
 	};
 }
 
@@ -80,7 +80,7 @@ function messageCommandToPayload(cmd: MessageCommandDefinition): CommandPayload 
 	};
 }
 
-function toPayload(cmd: AnyCommandDefinition): CommandPayload {
+export function commandToPayload(cmd: AnyCommandDefinition): CommandPayload {
 	switch (cmd.type) {
 		case DefinitionType.CommandGroup:
 			return commandGroupToPayload(cmd);
@@ -89,12 +89,12 @@ function toPayload(cmd: AnyCommandDefinition): CommandPayload {
 		case DefinitionType.MessageCommand:
 			return messageCommandToPayload(cmd);
 		default:
-			return commandToPayload(cmd);
+			return chatInputCommandToPayload(cmd);
 	}
 }
 
 export async function publishCommands(options: PublishCommandsOptions): Promise<APIApplicationCommand[]> {
-	const payloads = options.commands.map(toPayload);
+	const payloads = options.commands.map(commandToPayload);
 
 	if (options.guildId) {
 		return options.api.applicationCommands.bulkOverwriteGuildCommands(options.applicationId, options.guildId, payloads);

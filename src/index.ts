@@ -22,6 +22,7 @@ export type {
 	AwaitModalOptions,
 	CollectComponentsOptions,
 	ComponentCollector,
+	InteractionCallbackResponse,
 } from "./types/contexts.ts";
 export {
 	DefinitionType,
@@ -59,8 +60,8 @@ export { defineMessageCommand } from "./definitions/message-command.ts";
 export type { ErrorResponseOption, MissingPermissionsResponseOption } from "./types/bot-options.ts";
 export { createBot } from "./bot.ts";
 export type { CreateBotOptions, Bot } from "./bot.ts";
-export { publishCommands } from "./publish.ts";
-export type { PublishCommandsOptions } from "./publish.ts";
+export { commandToPayload, publishCommands } from "./publish.ts";
+export type { CommandPayload, PublishCommandsOptions } from "./publish.ts";
 
 export { CollectorTimeoutError } from "./collectors/errors.ts";
 

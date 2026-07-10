@@ -61,6 +61,7 @@
 	"peerDependencies": {
 		"@discordjs/collection": ">=3.0.0-dev",
 		"@discordjs/core": ">=3.0.0-dev",
+		"@discordjs/rest": ">=3.0.0-dev",
 		"@discordjs/ws": ">=3.0.0-dev.1776125601-58c5ebdd0",
 		"discord-api-types": ">=0.38.49"
 	},

@@ -20,6 +20,7 @@ import type {
 	APIMessage,
 	APIUser,
 	APIInteractionDataResolvedGuildMember,
+	RESTPostAPIInteractionCallbackWithResponseResult,
 } from "discord-api-types/v10";
 import type { ModalFields } from "../modal-fields.ts";
 import type { ComponentInteractionContext } from "./internal.ts";
@@ -29,12 +30,16 @@ export interface BaseContext {
 	gateway: WebSocketManager;
 }
 
+export type InteractionCallbackResponse = RESTPostAPIInteractionCallbackWithResponseResult;
+
 export interface InteractionContext extends BaseContext {
 	interaction: APIInteraction;
 	replied: boolean;
 	deferred: boolean;
 	reply(data: CreateInteractionResponseOptions): Promise<void>;
-	defer(data?: CreateInteractionDeferResponseOptions): Promise<void>;
+	defer(data: CreateInteractionDeferResponseOptions & { with_response: true }): Promise<InteractionCallbackResponse>;
+	defer(data?: CreateInteractionDeferResponseOptions & { with_response?: false }): Promise<undefined>;
+	defer(data?: CreateInteractionDeferResponseOptions): Promise<InteractionCallbackResponse | undefined>;
 	followUp(data: CreateInteractionFollowUpResponseOptions): Promise<APIMessage>;
 	editReply(data: EditInteractionResponseOptions): Promise<APIMessage>;
 	deleteReply(): Promise<void>;

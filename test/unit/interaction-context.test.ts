@@ -4,7 +4,7 @@ import { createCollectorStore } from "../../src/collectors/collector-store.ts";
 import { createButtonContext } from "../../src/context/button.ts";
 import { createCommandContext } from "../../src/context/command.ts";
 import { createInteractionContext } from "../../src/context/interaction.ts";
-import type { ModalContext } from "../../src/types/contexts.ts";
+import type { InteractionCallbackResponse, InteractionContext, ModalContext } from "../../src/types/contexts.ts";
 import type { ComponentInteractionContext } from "../../src/types/internal.ts";
 import { buttonInteraction, chatInputInteraction } from "../fixtures/interactions.ts";
 import { createMockAPI } from "../fixtures/mock-api.ts";
@@ -41,11 +41,30 @@ describe("createInteractionContext", () => {
 		const interaction = chatInputInteraction("test");
 		const ctx = createInteractionContext(api, {} as any, interaction);
 
-		await ctx.defer();
+		const response = await ctx.defer();
 
+		assert.strictEqual(response, undefined);
 		assert.strictEqual(ctx.deferred, true);
 		assert.strictEqual(ctx.replied, true);
 		assert.strictEqual(api.interactions.defer.mock.callCount(), 1);
+	});
+
+	it("returns the interaction callback response when requested", async () => {
+		const api = createMockAPI();
+		const interaction = chatInputInteraction("test");
+		const ctx = createInteractionContext(api, {} as any, interaction);
+		const callback = {
+			interaction: { id: interaction.id, type: interaction.type },
+		} as InteractionCallbackResponse;
+
+		api.interactions.defer.mock.mockImplementationOnce(async () => callback);
+
+		const response = await ctx.defer({ with_response: true });
+
+		assert.strictEqual(response, callback);
+		assert.deepStrictEqual(api.interactions.defer.mock.calls[0]!.arguments[2], { with_response: true });
+		assert.strictEqual(ctx.deferred, true);
+		assert.strictEqual(ctx.replied, true);
 	});
 
 	it("tracks replied state after showModal", async () => {
@@ -103,6 +122,22 @@ describe("createInteractionContext", () => {
 		assert.strictEqual(api.interactions.deferMessageUpdate.mock.callCount(), 1);
 	});
 });
+
+function assertDeferReturnTypes(ctx: InteractionContext, withResponse: boolean) {
+	const response: Promise<InteractionCallbackResponse> = ctx.defer({ with_response: true });
+	const noResponse: Promise<undefined> = ctx.defer();
+	const explicitNoResponse: Promise<undefined> = ctx.defer({ with_response: false });
+	const optionalResponse: Promise<InteractionCallbackResponse | undefined> = ctx.defer({
+		with_response: withResponse,
+	});
+
+	void response;
+	void noResponse;
+	void explicitNoResponse;
+	void optionalResponse;
+}
+
+void assertDeferReturnTypes;
 
 describe("interaction state re-entrancy", () => {
 	it("concurrent replies send one initial reply and one follow-up", async () => {

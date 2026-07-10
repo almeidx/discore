@@ -13,13 +13,13 @@ A lightweight, functional Discord bot framework built on [`@discordjs/core`](htt
 
 ## Requirements
 
-- Node.js >= 24.0.0
+- Node.js >= 22.19.0
 - `@discordjs/core` >= 3.0.0-dev
 
 ## Install
 
 ```sh
-npm install @almeidx/discore @discordjs/core @discordjs/rest @discordjs/ws
+npm install @almeidx/discore @discordjs/collection @discordjs/core @discordjs/rest @discordjs/ws discord-api-types
 ```
 
 ## Quick start
@@ -52,6 +52,31 @@ const gateway = new WebSocketManager({
 const bot = createBot({ rest, gateway, commands: [ping] });
 await publishCommands({ api: bot.api, applicationId: process.env.DISCORD_APP_ID!, commands: [ping] });
 await gateway.connect();
+```
+
+## Interaction callback responses
+
+Pass `with_response: true` to `defer` when the handler needs Discord's interaction callback response. The
+returned resource can include the message created by the acknowledgement.
+
+```ts
+const response = await ctx.defer({ with_response: true });
+const message = response.resource?.message;
+```
+
+Without `with_response: true`, `defer` resolves to `undefined`.
+
+## Mixed command publishing
+
+`commandToPayload` converts a Discore definition without publishing it. Use it when an application needs to
+combine Discore commands with commands managed by another framework in one bulk overwrite.
+Subcommand localization metadata is not yet preserved for command groups; see [Planned improvements](#planned-improvements).
+
+```ts
+import { commandToPayload } from "@almeidx/discore";
+
+const body = [...legacyCommandPayloads, ...discoreCommands.map(commandToPayload)];
+await bot.api.applicationCommands.bulkOverwriteGlobalCommands(applicationId, body);
 ```
 
 ## Error handling
@@ -138,6 +163,14 @@ await submission.reply({ content: "Thanks for the feedback!" });
 ```
 
 `awaitComponent`, `awaitModal`, and `collectComponents` reject (or end) with a `CollectorTimeoutError` when the timeout elapses -- wrap them in `try/catch` if a timeout is an expected outcome (see `examples/config-command.ts`).
+
+## Planned improvements
+
+- Support externally managed gateway dispatch.
+- Allow applications to inject typed services into handler contexts or access the owning bot.
+- Configure bot-level response defaults such as allowed mentions.
+- Return callback responses from the remaining initial acknowledgement helpers.
+- Preserve localization metadata throughout command groups and nested subcommand groups.
 
 ## More examples
 
