@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.2-alpha.2] - 2026-07-10
+
+- feat: expose bot on handler contexts
+
 ## [0.0.2-alpha.1] - 2026-07-10
 
 - feat: support incremental command migrations
