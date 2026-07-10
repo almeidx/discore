@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.2-alpha.1] - 2026-07-10
+
+- feat: support incremental command migrations
+- deps: Update dependency tsdown to ^0.22.4 (#95)
+- deps: Update patch/minor dependencies to v3.0.0-dev.1783513686-6e81ea771 (#94)
+- deps: Update patch/minor dependencies (#93)
+- deps: Lock file maintenance (#91)
+- deps: Update patch/minor dependencies (#92)
+- deps: Update patch/minor dependencies (#90)
+
 ## [0.0.2-alpha.0] - 2026-07-02
 
 - ci: Update workflows to include publint and adjust release inputs
