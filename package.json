@@ -52,10 +52,10 @@
 		"@discordjs/ws": "3.0.0-dev.1784593104-219ad7ba0",
 		"discord-api-types": "^0.38.50",
 		"husky": "^9.1.7",
-		"oxfmt": "^0.59.0",
-		"oxlint": "^1.74.0",
+		"oxfmt": "^0.60.0",
+		"oxlint": "^1.75.0",
 		"publint": "^0.3.21",
-		"tsdown": "^0.22.12",
+		"tsdown": "^0.22.13",
 		"typescript": "^7.0.2"
 	},
 	"peerDependencies": {
