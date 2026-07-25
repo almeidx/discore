@@ -55,7 +55,7 @@
 		"oxfmt": "^0.60.0",
 		"oxlint": "^1.75.0",
 		"publint": "^0.3.22",
-		"tsdown": "^0.22.13",
+		"tsdown": "^0.22.14",
 		"typescript": "^7.0.2"
 	},
 	"peerDependencies": {
@@ -68,5 +68,5 @@
 	"engines": {
 		"node": ">=22.19.0"
 	},
-	"packageManager": "pnpm@11.16.0"
+	"packageManager": "pnpm@11.17.0"
 }
