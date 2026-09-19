@@ -36,7 +36,6 @@ const rest = new REST().setToken(token);
 const gateway = new WebSocketManager({
 	token,
 	intents: GatewayIntentBits.Guilds | GatewayIntentBits.GuildMessages | GatewayIntentBits.MessageContent,
-	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
 const bot = createBot({
@@ -51,7 +50,9 @@ const published = await publishCommands({ api: bot.api, applicationId: process.e
 console.log(`Published ${published.length} commands`);
 
 console.log("Connecting to gateway...");
-await gateway.connect();
+await gateway.connect({
+	gatewayInformation: (await rest.get(Routes.gatewayBot())) as RESTGetAPIGatewayBotResult,
+});
 
 process.on("SIGINT", () => {
 	console.log("Shutting down...");

@@ -100,7 +100,6 @@ const rest = new REST().setToken(token);
 const gateway = new WebSocketManager({
 	token,
 	intents: GatewayIntentBits.Guilds,
-	fetchGatewayInformation: () => rest.get(Routes.gatewayBot()) as Promise<RESTGetAPIGatewayBotResult>,
 });
 
 const bot = createBot({ rest, gateway, commands: [confirm, poll], events: [ready] });
@@ -109,4 +108,6 @@ console.log("Publishing commands...");
 await publishCommands({ api: bot.api, applicationId: process.env.DISCORD_APP_ID!, commands: [confirm, poll] });
 
 console.log("Connecting to gateway...");
-await gateway.connect();
+await gateway.connect({
+	gatewayInformation: (await rest.get(Routes.gatewayBot())) as RESTGetAPIGatewayBotResult,
+});
