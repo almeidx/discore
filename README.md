@@ -26,10 +26,10 @@ npm install @almeidx/discore @discordjs/collection @discordjs/core @discordjs/re
 ## Quick start
 
 ```ts
+import { createBot, defineCommand, publishCommands } from "@almeidx/discore";
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import { GatewayIntentBits, Routes, type RESTGetAPIGatewayBotResult } from "discord-api-types/v10";
-import { createBot, defineCommand, publishCommands } from "@almeidx/discore";
 
 const token = process.env.DISCORD_TOKEN!;
 
@@ -101,8 +101,8 @@ The rethrown error rejects the gateway dispatch listener. By default that become
 ## Typed options
 
 ```ts
-import { ApplicationCommandOptionType } from "discord-api-types/v10";
 import { defineCommand } from "@almeidx/discore";
+import { ApplicationCommandOptionType } from "discord-api-types/v10";
 
 const ban = defineCommand({
 	data: {
@@ -126,8 +126,8 @@ const ban = defineCommand({
 Buttons, select menus, and modals use regex patterns with named capture groups:
 
 ```ts
-import { MessageFlags } from "discord-api-types/v10";
 import { defineButton } from "@almeidx/discore";
+import { MessageFlags } from "discord-api-types/v10";
 
 const verify = defineButton({
 	customId: /^verify:(?<userId>\d+)$/,
