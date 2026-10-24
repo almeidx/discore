@@ -10,6 +10,7 @@
 		"outDir": "dist",
 		"noUncheckedIndexedAccess": true,
 		"isolatedModules": true,
+		"isolatedDeclarations": true,
 		"skipLibCheck": true,
 		"noEmit": true,
 		"allowImportingTsExtensions": true,
