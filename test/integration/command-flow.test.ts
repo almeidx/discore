@@ -1,106 +1,42 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
-import { ApplicationCommandOptionType } from "discord-api-types/v10";
-import { GatewayDispatchEvents } from "discord-api-types/v10";
-import { createBot, type Bot } from "../../src/bot.ts";
-import { defineCommand } from "../../src/definitions/command.ts";
+import { defineCommand, type CommandContext } from "../../src/index.ts";
 import { chatInputInteraction } from "../fixtures/interactions.ts";
-import { createMockREST } from "../fixtures/mock-api.ts";
-import { createMockGateway } from "../fixtures/mock-gateway.ts";
+import { createTestBot } from "../fixtures/test-bot.ts";
 
-describe("command flow integration", () => {
-	it("dispatches command through full bot pipeline", async () => {
-		let contextBot: Bot | undefined;
-		const handler = mock.fn(async (ctx: any) => {
-			contextBot = ctx.bot;
-			await ctx.reply({ content: "Pong!" });
-		});
-
+describe("command flow", () => {
+	it("runs the matching command with the interaction on its context", async () => {
+		let context: CommandContext | undefined;
 		const ping = defineCommand({
-			data: { name: "ping", description: "Pong!" },
-			handler,
+			data: { name: "ping", description: "d" },
+			handler: (ctx) => {
+				context = ctx;
+			},
 		});
-
-		const gateway = createMockGateway();
-		const bot = createBot({
-			rest: createMockREST(),
-			gateway: gateway as any,
-			commands: [ping],
+		const other = mock.fn(() => {});
+		const { interact } = createTestBot({
+			commands: [ping, defineCommand({ data: { name: "other", description: "d" }, handler: other })],
 		});
-
 		const interaction = chatInputInteraction("ping");
-		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, interaction);
 
-		await new Promise((r) => setTimeout(r, 50));
+		await interact(interaction);
 
-		assert.strictEqual(handler.mock.callCount(), 1);
-		assert.strictEqual(contextBot, bot);
+		assert.strictEqual(context?.interaction, interaction);
+		assert.strictEqual(other.mock.callCount(), 0);
 	});
 
-	it("dispatches command with options", async () => {
-		let receivedUserId: string | undefined;
-
-		const ban = defineCommand({
-			data: {
-				name: "ban",
-				description: "Ban",
-				options: [{ name: "user", type: ApplicationCommandOptionType.User, description: "u", required: true }] as const,
-			},
-			handler: async (ctx) => {
-				receivedUserId = ctx.options.user.user.id;
-			},
+	it("ignores commands that are not registered", async () => {
+		const handler = mock.fn(() => {});
+		const afterInteraction = mock.fn(() => {});
+		const { api, interact } = createTestBot({
+			commands: [defineCommand({ data: { name: "ping", description: "d" }, handler })],
+			hooks: { afterInteraction },
 		});
 
-		const gateway = createMockGateway();
-		createBot({
-			rest: createMockREST(),
-			gateway: gateway as any,
-			commands: [ban],
-		});
+		await interact(chatInputInteraction("unknown"));
 
-		const interaction = chatInputInteraction("ban", [
-			{ name: "user", type: ApplicationCommandOptionType.User, value: "999888777" },
-		]);
-		(interaction.data as any).resolved = {
-			users: {
-				"999888777": { id: "999888777", username: "testuser", discriminator: "0", avatar: null, global_name: null },
-			},
-		};
-		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, interaction);
-
-		await new Promise((r) => setTimeout(r, 50));
-
-		assert.strictEqual(receivedUserId, "999888777");
-	});
-
-	it("hooks execute in correct order", async () => {
-		const order: string[] = [];
-
-		const cmd = defineCommand({
-			data: { name: "test", description: "test" },
-			hooks: {
-				beforeCommand: async () => {
-					order.push("before");
-				},
-				afterCommand: async () => {
-					order.push("after");
-				},
-			},
-			handler: async () => {
-				order.push("handler");
-			},
-		});
-
-		const gateway = createMockGateway();
-		createBot({
-			rest: createMockREST(),
-			gateway: gateway as any,
-			commands: [cmd],
-		});
-
-		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, chatInputInteraction("test"));
-		await new Promise((r) => setTimeout(r, 50));
-
-		assert.deepStrictEqual(order, ["before", "handler", "after"]);
+		assert.strictEqual(handler.mock.callCount(), 0);
+		assert.strictEqual(afterInteraction.mock.callCount(), 0);
+		assert.strictEqual(api.interactions.reply.mock.callCount(), 0);
 	});
 });

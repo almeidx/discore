@@ -18,16 +18,21 @@ Functional, no classes. The core pattern is `defineX()` functions that return pl
 
 ### Key directories
 
-- `src/types/` — Type definitions (contexts, definitions, hooks, options)
-- `src/definitions/` — `defineCommand`, `defineEvent`, `defineButton`, `defineSelectMenu`, `defineModal`, `defineAutocomplete`, `defineCommandGroup`
-- `src/context/` — Context factory functions (closure-based state for reply/defer tracking)
-- `src/routing/` — Interaction, event, and component routers
-- `src/collectors/` — `awaitComponent` and `collectComponents` implementations
-- `src/bot.ts` — `createBot` entry point
-- `src/publish.ts` — `publishCommands` utility
-- `test/unit/` — Unit tests
-- `test/integration/` — Integration tests
-- `test/fixtures/` — Mock factories for gateway, API, and interaction payloads
+Code is grouped by feature: each kind's definition type, `defineX`, context type, and context factory live together.
+
+- `src/commands/` — slash commands, command groups, context-menu commands, option parsing/inference, bot-permission check, command router, `publishCommands`
+- `src/components/` — buttons, select menus, modals (+ `ModalFields`), shared component context, component router (also hands interactions to collectors first)
+- `src/autocomplete/` — autocomplete definition/context and router
+- `src/events/` — gateway event definitions, context, and router
+- `src/collectors/` — `awaitComponent`, `awaitModal`, `collectComponents`, and the collector stores
+- `src/interaction/` — `InteractionContext` with reply/defer state (`acknowledge`), and `runInteraction`: the one pipeline every interaction handler runs through (global before/after interaction hooks, layered before/onError/after hooks, error response)
+- `src/hooks.ts` — hook types; `src/bot.ts` — `createBot`, delegating to the routers
+- `test/unit/`, `test/integration/` — tests drive a real bot through `test/fixtures/test-bot.ts` (`createTestBot`) and import production code only from `src/index.ts`
+- `test/fixtures/` — `createTestBot` (real bot on an `EventEmitter` gateway), mock API spies, interaction payload builders
+
+### Interaction pipeline
+
+Hook layers are ordered outermost (global) to innermost (handler). `before` hooks run outer→inner and cancel on `false`; `onError` hooks run inner→outer and the first `false` suppresses the error; otherwise the fallback response is sent (failure ignored) and the error is rethrown. `after` hooks run inner→outer only if the handler started.
 
 ### Type inference
 

@@ -2,29 +2,29 @@ import { Collection } from "@discordjs/collection";
 import { API } from "@discordjs/core";
 import type { REST } from "@discordjs/rest";
 import { WebSocketShardEvents, type WebSocketManager } from "@discordjs/ws";
-import { GatewayDispatchEvents, type GatewayDispatchPayload } from "discord-api-types/v10";
-import { createCollectorStore } from "./collectors/collector-store.ts";
-import { createComponentRouter } from "./routing/component-router.ts";
-import { createEventRouter } from "./routing/event-router.ts";
-import { createInteractionRouter } from "./routing/interaction-router.ts";
-import type { ErrorResponseOption, MissingPermissionsResponseOption } from "./types/bot-options.ts";
-import type { ModalContext } from "./types/contexts.ts";
 import {
-	DefinitionType,
-	type AnyCommandDefinition,
-	type CommandDefinition,
-	type CommandGroupDefinition,
-	type UserCommandDefinition,
-	type MessageCommandDefinition,
-	type EventDefinition,
-	type InteractionDefinition,
-	type ButtonDefinition,
-	type SelectMenuDefinition,
-	type ModalDefinition,
-	type AutocompleteDefinition,
-} from "./types/definitions.ts";
-import type { GlobalHooks } from "./types/hooks.ts";
-import type { ComponentInteractionContext } from "./types/internal.ts";
+	GatewayDispatchEvents,
+	InteractionType,
+	type APIInteraction,
+	type GatewayDispatchPayload,
+} from "discord-api-types/v10";
+import type { AutocompleteDefinition } from "./autocomplete/autocomplete.ts";
+import { createAutocompleteRouter } from "./autocomplete/router.ts";
+import { createCollectors } from "./collectors/collectors.ts";
+import type { CommandDefinition } from "./commands/chat-input.ts";
+import type { CommandGroupDefinition } from "./commands/command-group.ts";
+import type { MessageCommandDefinition, UserCommandDefinition } from "./commands/context-menu.ts";
+import type { MissingPermissionsResponseOption } from "./commands/permissions.ts";
+import { createCommandRouter, type AnyCommandDefinition } from "./commands/router.ts";
+import { createComponentRouter, type ComponentDefinition } from "./components/router.ts";
+import { DefinitionType } from "./definition-type.ts";
+import type { EventDefinition } from "./events/event.ts";
+import { createEventRouter } from "./events/router.ts";
+import type { GlobalHooks } from "./hooks.ts";
+import type { ErrorResponseOption } from "./interaction/pipeline.ts";
+import { throwCollected } from "./throw-collected.ts";
+
+export type InteractionDefinition = ComponentDefinition | AutocompleteDefinition;
 
 /** Configuration for {@link createBot}. */
 export interface CreateBotOptions {
@@ -43,10 +43,10 @@ export interface Bot {
 	gateway: WebSocketManager;
 	/** Average heartbeat latency across all shards in milliseconds, or `undefined` if no heartbeats have been received yet. */
 	readonly ping: number | undefined;
-	commands: Collection<string, CommandDefinition>;
-	commandGroups: Collection<string, CommandGroupDefinition>;
-	userCommands: Collection<string, UserCommandDefinition>;
-	messageCommands: Collection<string, MessageCommandDefinition>;
+	readonly commands: Collection<string, CommandDefinition>;
+	readonly commandGroups: Collection<string, CommandGroupDefinition>;
+	readonly userCommands: Collection<string, UserCommandDefinition>;
+	readonly messageCommands: Collection<string, MessageCommandDefinition>;
 	addCommand(cmd: AnyCommandDefinition): void;
 	removeCommand(name: string): boolean;
 	addEvent(event: EventDefinition): void;
@@ -61,157 +61,44 @@ export interface Bot {
  * Call this after defining your commands, events, and interactions.
  */
 export function createBot(options: CreateBotOptions): Bot {
-	const api = new API(options.rest);
-	const { gateway } = options;
-
-	const commandMap = new Collection<string, CommandDefinition>();
-	const commandGroupMap = new Collection<string, CommandGroupDefinition>();
-	const userCommandMap = new Collection<string, UserCommandDefinition>();
-	const messageCommandMap = new Collection<string, MessageCommandDefinition>();
-
-	for (const cmd of options.commands ?? []) {
-		switch (cmd.type) {
-			case DefinitionType.CommandGroup:
-				commandGroupMap.set(cmd.data.name, cmd);
-				break;
-			case DefinitionType.UserCommand:
-				userCommandMap.set(cmd.data.name, cmd);
-				break;
-			case DefinitionType.MessageCommand:
-				messageCommandMap.set(cmd.data.name, cmd);
-				break;
-			default:
-				commandMap.set(cmd.data.name, cmd);
-				break;
-		}
-	}
-
-	const buttons: ButtonDefinition[] = [];
-	const selectMenus: SelectMenuDefinition[] = [];
-	const modals: ModalDefinition[] = [];
-	const autocompletes: AutocompleteDefinition[] = [];
-
-	for (const def of options.interactions ?? []) {
-		switch (def.type) {
-			case DefinitionType.Button:
-				buttons.push(def);
-				break;
-			case DefinitionType.SelectMenu:
-				selectMenus.push(def);
-				break;
-			case DefinitionType.Modal:
-				modals.push(def);
-				break;
-			case DefinitionType.Autocomplete:
-				autocompletes.push(def);
-				break;
-		}
-	}
-
+	const { gateway, errorResponse, missingPermissionsResponse } = options;
 	const hooks = options.hooks ?? {};
-	const collectorStore = createCollectorStore<ComponentInteractionContext>();
-	const modalCollectorStore = createCollectorStore<ModalContext>();
-	const componentRouter = createComponentRouter(buttons, selectMenus, modals, hooks, options.errorResponse);
-	const eventRouter = createEventRouter(options.events ?? [], hooks);
-	const interactionRouter = createInteractionRouter({
-		commands: commandMap,
-		commandGroups: commandGroupMap,
-		userCommands: userCommandMap,
-		messageCommands: messageCommandMap,
-		autocompletes,
-		componentRouter,
-		collectorStore,
-		modalCollectorStore,
-		hooks,
-		errorResponse: options.errorResponse,
-		missingPermissionsResponse: options.missingPermissionsResponse,
-	});
-
 	const pings = new Collection<number, number>();
 
 	const bot: Bot = {
-		api,
+		api: new API(options.rest),
 		gateway,
 		get ping() {
 			if (!pings.size) return undefined;
 			return pings.reduce((sum, latency) => sum + latency, 0) / pings.size;
 		},
-		commands: commandMap,
-		commandGroups: commandGroupMap,
-		userCommands: userCommandMap,
-		messageCommands: messageCommandMap,
-
-		addCommand(cmd: AnyCommandDefinition): void {
-			switch (cmd.type) {
-				case DefinitionType.CommandGroup:
-					commandGroupMap.set(cmd.data.name, cmd);
-					break;
-				case DefinitionType.UserCommand:
-					userCommandMap.set(cmd.data.name, cmd);
-					break;
-				case DefinitionType.MessageCommand:
-					messageCommandMap.set(cmd.data.name, cmd);
-					break;
-				default:
-					commandMap.set(cmd.data.name, cmd);
-					break;
-			}
+		get commands() {
+			return commandRouter.commands;
+		},
+		get commandGroups() {
+			return commandRouter.commandGroups;
+		},
+		get userCommands() {
+			return commandRouter.userCommands;
+		},
+		get messageCommands() {
+			return commandRouter.messageCommands;
 		},
 
-		removeCommand(name: string): boolean {
-			return (
-				commandMap.delete(name) ||
-				commandGroupMap.delete(name) ||
-				userCommandMap.delete(name) ||
-				messageCommandMap.delete(name)
-			);
+		addCommand: (cmd) => commandRouter.add(cmd),
+		removeCommand: (name) => commandRouter.remove(name),
+		addEvent: (event) => eventRouter.add(event),
+		removeEvent: (event) => eventRouter.remove(event),
+
+		addInteraction(interaction) {
+			if (interaction.type === DefinitionType.Autocomplete) autocompleteRouter.add(interaction);
+			else componentRouter.add(interaction);
 		},
 
-		addEvent(event: EventDefinition): void {
-			eventRouter.addHandler(event);
-		},
-
-		removeEvent(event: EventDefinition): boolean {
-			return eventRouter.removeHandler(event);
-		},
-
-		addInteraction(interaction: InteractionDefinition): void {
-			switch (interaction.type) {
-				case DefinitionType.Button:
-					buttons.push(interaction);
-					break;
-				case DefinitionType.SelectMenu:
-					selectMenus.push(interaction);
-					break;
-				case DefinitionType.Modal:
-					modals.push(interaction);
-					break;
-				case DefinitionType.Autocomplete:
-					autocompletes.push(interaction);
-					break;
-			}
-		},
-
-		removeInteraction(interaction: InteractionDefinition): boolean {
-			let arr: InteractionDefinition[];
-			switch (interaction.type) {
-				case DefinitionType.Button:
-					arr = buttons;
-					break;
-				case DefinitionType.SelectMenu:
-					arr = selectMenus;
-					break;
-				case DefinitionType.Modal:
-					arr = modals;
-					break;
-				case DefinitionType.Autocomplete:
-					arr = autocompletes;
-					break;
-			}
-			const idx = arr.indexOf(interaction);
-			if (idx === -1) return false;
-			arr.splice(idx, 1);
-			return true;
+		removeInteraction(interaction) {
+			return interaction.type === DefinitionType.Autocomplete
+				? autocompleteRouter.remove(interaction)
+				: componentRouter.remove(interaction);
 		},
 
 		destroy() {
@@ -220,28 +107,47 @@ export function createBot(options: CreateBotOptions): Bot {
 		},
 	};
 
+	const collectors = createCollectors();
+	const commandRouter = createCommandRouter({ bot, hooks, collectors, errorResponse, missingPermissionsResponse });
+	const componentRouter = createComponentRouter({ bot, hooks, collectors, errorResponse });
+	const autocompleteRouter = createAutocompleteRouter({ bot, hooks });
+	const eventRouter = createEventRouter({ bot, hooks });
+
+	for (const cmd of options.commands ?? []) bot.addCommand(cmd);
+	for (const event of options.events ?? []) bot.addEvent(event);
+	for (const interaction of options.interactions ?? []) bot.addInteraction(interaction);
+
+	async function handleInteraction(interaction: APIInteraction): Promise<void> {
+		switch (interaction.type) {
+			case InteractionType.ApplicationCommand:
+				return commandRouter.handle(interaction);
+			case InteractionType.MessageComponent:
+				return componentRouter.handleComponent(interaction);
+			case InteractionType.ModalSubmit:
+				return componentRouter.handleModal(interaction);
+			case InteractionType.ApplicationCommandAutocomplete:
+				return autocompleteRouter.handle(interaction);
+		}
+	}
+
 	async function dispatchListener(payload: GatewayDispatchPayload, shardId: number) {
 		const errors: unknown[] = [];
 
 		if (payload.t === GatewayDispatchEvents.InteractionCreate) {
 			try {
-				await interactionRouter.handle(bot, payload.d);
+				await handleInteraction(payload.d);
 			} catch (error) {
 				errors.push(error);
 			}
 		}
 
 		try {
-			await eventRouter.dispatch(payload.t, payload.d, bot, shardId);
+			await eventRouter.dispatch(payload.t, payload.d, shardId);
 		} catch (error) {
 			errors.push(error);
 		}
 
-		if (errors.length === 1) {
-			throw errors[0];
-		} else if (errors.length > 1) {
-			throw new AggregateError(errors, "Dispatch failed");
-		}
+		throwCollected(errors, "Dispatch failed");
 	}
 
 	function heartbeatCompleteListener({ latency }: { latency: number }, shardId: number) {

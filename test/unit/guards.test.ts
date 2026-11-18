@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
-import { it } from "node:test";
-import { createCollectorStore } from "../../src/collectors/collector-store.ts";
-import { createAutocompleteContext } from "../../src/context/autocomplete.ts";
-import { createButtonContext } from "../../src/context/button.ts";
-import { createCommandContext } from "../../src/context/command.ts";
-import { createMessageCommandContext } from "../../src/context/message-command.ts";
-import { createModalContext } from "../../src/context/modal.ts";
-import { createSelectMenuContext } from "../../src/context/select-menu.ts";
-import { createUserCommandContext } from "../../src/context/user-command.ts";
+import { before, describe, it } from "node:test";
 import {
+	ApplicationCommandOptionType,
+	ComponentType,
+	type APIInteraction,
+	type APIMessage,
+	type APIUser,
+} from "discord-api-types/v10";
+import {
+	defineAutocomplete,
+	defineButton,
+	defineCommand,
+	defineMessageCommand,
+	defineModal,
+	defineSelectMenu,
+	defineUserCommand,
 	isAutocomplete,
 	isButton,
 	isCommand,
@@ -16,10 +22,9 @@ import {
 	isModal,
 	isSelectMenu,
 	isUserCommand,
-} from "../../src/guards.ts";
-import type { ModalContext } from "../../src/types/contexts.ts";
-import type { AnyInteractionContext } from "../../src/types/hooks.ts";
-import type { ComponentInteractionContext } from "../../src/types/internal.ts";
+	type AnyInteractionContext,
+	type ModalFields,
+} from "../../src/index.ts";
 import {
 	autocompleteInteraction,
 	buttonInteraction,
@@ -29,100 +34,119 @@ import {
 	selectMenuInteraction,
 	userCommandInteraction,
 } from "../fixtures/interactions.ts";
-import { createMockBot } from "../fixtures/mock-bot.ts";
+import { createTestBot } from "../fixtures/test-bot.ts";
 
-function createCommandTestContext(): AnyInteractionContext {
-	return createCommandContext(
-		createMockBot(),
-		chatInputInteraction("search"),
-		createCollectorStore<ComponentInteractionContext>(),
-		createCollectorStore<ModalContext>(),
-	);
-}
+const userSelect = selectMenuInteraction("choose", ["999"]);
+Object.assign(userSelect.data, { component_type: ComponentType.UserSelect });
 
-function createUserCommandTestContext(): AnyInteractionContext {
-	return createUserCommandContext(
-		createMockBot(),
-		userCommandInteraction("info", "999"),
-		createCollectorStore<ComponentInteractionContext>(),
-		createCollectorStore<ModalContext>(),
-	);
-}
+const interactions = {
+	command: chatInputInteraction("search"),
+	userCommand: userCommandInteraction("info", "999"),
+	messageCommand: messageCommandInteraction("quote", "555"),
+	button: buttonInteraction("confirm"),
+	stringSelect: selectMenuInteraction("choose", ["a"]),
+	userSelect,
+	modal: modalSubmitInteraction("feedback", []),
+	autocomplete: autocompleteInteraction("search", {
+		name: "query",
+		value: "x",
+		type: ApplicationCommandOptionType.String,
+	}),
+} satisfies Record<string, APIInteraction>;
 
-function createMessageCommandTestContext(): AnyInteractionContext {
-	return createMessageCommandContext(
-		createMockBot(),
-		messageCommandInteraction("quote", "555"),
-		createCollectorStore<ComponentInteractionContext>(),
-		createCollectorStore<ModalContext>(),
-	);
-}
+type Kind = keyof typeof interactions;
 
-function createButtonTestContext(): AnyInteractionContext {
-	return createButtonContext(createMockBot(), buttonInteraction("confirm"), {});
-}
+const kinds = Object.keys(interactions) as Kind[];
 
-function createSelectMenuTestContext(): AnyInteractionContext {
-	return createSelectMenuContext(createMockBot(), selectMenuInteraction("choose", ["a"]), {});
-}
+const guards: [name: string, guard: (ctx: AnyInteractionContext) => boolean, accepts: Kind[]][] = [
+	["isCommand", isCommand, ["command"]],
+	["isUserCommand", isUserCommand, ["userCommand"]],
+	["isMessageCommand", isMessageCommand, ["messageCommand"]],
+	["isButton", isButton, ["button"]],
+	["isSelectMenu", isSelectMenu, ["stringSelect", "userSelect"]],
+	["isModal", isModal, ["modal"]],
+	["isAutocomplete", isAutocomplete, ["autocomplete"]],
+];
 
-function createModalTestContext(): AnyInteractionContext {
-	return createModalContext(createMockBot(), modalSubmitInteraction("feedback", []), {});
-}
+describe("interaction context guards", () => {
+	const contexts = new Map<Kind, AnyInteractionContext>();
 
-function createAutocompleteTestContext(): AnyInteractionContext {
-	return createAutocompleteContext(
-		createMockBot(),
-		autocompleteInteraction("search", { name: "query", value: "x", type: 3 }),
-	);
-}
+	before(async () => {
+		const handler = () => {};
+		const { interact } = createTestBot({
+			commands: [
+				defineCommand({ data: { name: "search", description: "Search" }, handler }),
+				defineUserCommand({ data: { name: "info" }, handler }),
+				defineMessageCommand({ data: { name: "quote" }, handler }),
+			],
+			interactions: [
+				defineButton({ customId: "confirm", handler }),
+				defineSelectMenu({ customId: "choose", handler }),
+				defineModal({ customId: "feedback", handler }),
+				defineAutocomplete({ command: "search", option: "query", handler }),
+			],
+			hooks: {
+				afterInteraction: (ctx) => {
+					const kind = kinds.find((candidate) => interactions[candidate] === ctx.interaction);
+					assert.ok(kind);
+					contexts.set(kind, ctx);
+				},
+			},
+		});
 
-const commandCtx = createCommandTestContext();
-const userCommandCtx = createUserCommandTestContext();
-const messageCommandCtx = createMessageCommandTestContext();
-const buttonCtx = createButtonTestContext();
-const selectMenuCtx = createSelectMenuTestContext();
-const modalCtx = createModalTestContext();
-const autocompleteCtx = createAutocompleteTestContext();
+		for (const kind of kinds) await interact(interactions[kind]);
 
-const guards: Record<string, (ctx: AnyInteractionContext) => boolean> = {
-	isCommand,
-	isUserCommand,
-	isMessageCommand,
-	isButton,
-	isSelectMenu,
-	isModal,
-	isAutocomplete,
-};
+		assert.deepStrictEqual([...contexts.keys()], kinds);
+	});
 
-const contexts: Record<string, AnyInteractionContext> = {
-	isCommand: commandCtx,
-	isUserCommand: userCommandCtx,
-	isMessageCommand: messageCommandCtx,
-	isButton: buttonCtx,
-	isSelectMenu: selectMenuCtx,
-	isModal: modalCtx,
-	isAutocomplete: autocompleteCtx,
-};
-
-for (const [guardName, guard] of Object.entries(guards)) {
-	for (const [ctxName, ctx] of Object.entries(contexts)) {
-		const expected = guardName === ctxName;
-		const action = expected ? "accepts" : "rejects";
-
-		it(`${guardName} ${action} ${ctxName} context`, () => {
-			assert.strictEqual(guard(ctx), expected);
+	for (const [name, guard, accepts] of guards) {
+		it(`${name} accepts only ${accepts.join(" and ")} contexts`, () => {
+			assert.deepStrictEqual(
+				kinds.filter((kind) => guard(contexts.get(kind)!)),
+				accepts,
+			);
 		});
 	}
-}
+});
 
-it("narrows the context type", () => {
-	const ctx: AnyInteractionContext = commandCtx;
+function assertGuardsNarrow(ctx: AnyInteractionContext): void {
+	// @ts-expect-error options exist only on command and autocomplete contexts
+	void ctx.options;
+	// @ts-expect-error customId exists only on component and modal contexts
+	void ctx.customId;
+
 	if (isCommand(ctx)) {
-		void ctx.options;
+		const options: Record<string, unknown> = ctx.options;
+		void options;
+	}
+	if (isUserCommand(ctx)) {
+		const targetUser: APIUser = ctx.targetUser;
+		void targetUser;
+	}
+	if (isMessageCommand(ctx)) {
+		const targetMessage: APIMessage = ctx.targetMessage;
+		void targetMessage;
 	}
 	if (isButton(ctx)) {
-		void ctx.customId;
+		const customId: string = ctx.customId;
+		// @ts-expect-error button contexts have no selected values
+		void ctx.values;
+		void customId;
 	}
-	assert.ok(true);
-});
+	if (isSelectMenu(ctx)) {
+		const values: string[] = ctx.values;
+		void values;
+	}
+	if (isModal(ctx)) {
+		const fields: ModalFields = ctx.fields;
+		void fields;
+	}
+	if (isAutocomplete(ctx)) {
+		const focused: { name: string; value: string | number } = ctx.focused;
+		// @ts-expect-error autocomplete interactions cannot be replied to
+		void ctx.reply;
+		void focused;
+	}
+}
+
+void assertGuardsNarrow;

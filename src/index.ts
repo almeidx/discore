@@ -1,68 +1,51 @@
-export type { InferOptions, OptionTypeMap, ResolvedUser } from "./types/options.ts";
-export type {
-	HandlerHooks,
-	CommandHooks,
-	GlobalHooks,
-	AnyInteractionContext,
-	AnyCommandContext,
-} from "./types/hooks.ts";
-export type { GatewayEventData } from "./types/events.ts";
-export type {
-	BaseContext,
-	InteractionContext,
-	CommandContext,
-	EventContext,
-	ButtonContext,
-	SelectMenuContext,
-	ModalContext,
-	AutocompleteContext,
-	UserCommandContext,
-	MessageCommandContext,
-	AwaitComponentOptions,
-	AwaitModalOptions,
-	CollectComponentsOptions,
-	ComponentCollector,
-	InteractionCallbackResponse,
-} from "./types/contexts.ts";
-export {
-	DefinitionType,
-	type CommandDefinition,
-	type CommandGroupDefinition,
-	type EventDefinition,
-	type ButtonDefinition,
-	type SelectMenuDefinition,
-	type ModalDefinition,
-	type AutocompleteDefinition,
-	type UserCommandDefinition,
-	type MessageCommandDefinition,
-	type SubcommandGroup,
-	type InteractionDefinition,
-	type AnyCommandDefinition,
-	type CommandData,
-	type CommandGroupData,
-	type ContextMenuCommandData,
-} from "./types/definitions.ts";
-export type { ComponentInteractionContext } from "./types/internal.ts";
-export type { ModalFields } from "./modal-fields.ts";
+export { DefinitionType } from "./definition-type.ts";
+export type { HandlerHooks, CommandHooks, GlobalHooks, AnyInteractionContext, AnyCommandContext } from "./hooks.ts";
+export type { BaseContext } from "./base-context.ts";
+export type { InteractionContext, InteractionCallbackResponse } from "./interaction/context.ts";
+export type { ErrorResponseOption } from "./interaction/pipeline.ts";
 
-export { defineCommand } from "./definitions/command.ts";
-export type { DefineCommandConfig } from "./definitions/command.ts";
-export { defineCommandGroup } from "./definitions/command-group.ts";
-export { defineEvent } from "./definitions/event.ts";
-export { defineButton } from "./definitions/button.ts";
-export { defineSelectMenu } from "./definitions/select-menu.ts";
-export { defineModal } from "./definitions/modal.ts";
-export { defineAutocomplete } from "./definitions/autocomplete.ts";
-export type { DefineAutocompleteConfig } from "./definitions/autocomplete.ts";
-export { defineUserCommand } from "./definitions/user-command.ts";
-export { defineMessageCommand } from "./definitions/message-command.ts";
-
-export type { ErrorResponseOption, MissingPermissionsResponseOption } from "./types/bot-options.ts";
 export { createBot } from "./bot.ts";
-export type { CreateBotOptions, Bot } from "./bot.ts";
-export { commandToPayload, publishCommands } from "./publish.ts";
-export type { CommandPayload, PublishCommandsOptions } from "./publish.ts";
+export type { CreateBotOptions, Bot, InteractionDefinition } from "./bot.ts";
 
+export { defineCommand } from "./commands/chat-input.ts";
+export type { CommandContext, CommandData, CommandDefinition, DefineCommandConfig } from "./commands/chat-input.ts";
+export { defineCommandGroup } from "./commands/command-group.ts";
+export type { CommandGroupData, CommandGroupDefinition, SubcommandGroup } from "./commands/command-group.ts";
+export { defineUserCommand, defineMessageCommand } from "./commands/context-menu.ts";
+export type {
+	ContextMenuCommandData,
+	UserCommandContext,
+	UserCommandDefinition,
+	MessageCommandContext,
+	MessageCommandDefinition,
+} from "./commands/context-menu.ts";
+export type { InferOptions, OptionTypeMap, ResolvedUser } from "./commands/options.ts";
+export type { MissingPermissionsResponseOption } from "./commands/permissions.ts";
+export type { AnyCommandDefinition } from "./commands/router.ts";
+export { commandToPayload, publishCommands } from "./commands/publish.ts";
+export type { CommandPayload, PublishCommandsOptions } from "./commands/publish.ts";
+
+export { defineButton } from "./components/button.ts";
+export type { ButtonContext, ButtonDefinition } from "./components/button.ts";
+export { defineSelectMenu } from "./components/select-menu.ts";
+export type { SelectMenuContext, SelectMenuDefinition } from "./components/select-menu.ts";
+export { defineModal } from "./components/modal.ts";
+export type { ModalContext, ModalDefinition } from "./components/modal.ts";
+export type { ModalFields } from "./components/modal-fields.ts";
+export type { ComponentInteractionContext } from "./components/context.ts";
+
+export { defineAutocomplete } from "./autocomplete/autocomplete.ts";
+export type {
+	AutocompleteContext,
+	AutocompleteDefinition,
+	DefineAutocompleteConfig,
+} from "./autocomplete/autocomplete.ts";
+
+export { defineEvent } from "./events/event.ts";
+export type { EventContext, EventDefinition, GatewayEventData } from "./events/event.ts";
+
+export type { AwaitComponentOptions, AwaitModalOptions } from "./collectors/collectors.ts";
+export type { CollectComponentsOptions, ComponentCollector } from "./collectors/collect-components.ts";
 export { CollectorTimeoutError } from "./collectors/errors.ts";
 
 export {

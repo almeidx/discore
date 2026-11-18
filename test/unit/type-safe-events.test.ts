@@ -1,64 +1,52 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { GatewayDispatchEvents, type GatewayMessageCreateDispatchData } from "discord-api-types/v10";
-import { defineEvent } from "../../src/definitions/event.ts";
-import { createEventRouter } from "../../src/routing/event-router.ts";
-import { DefinitionType } from "../../src/types/definitions.ts";
-import { createMockBot } from "../fixtures/mock-bot.ts";
+import {
+	GatewayDispatchEvents,
+	type GatewayMessageCreateDispatchData,
+	type GatewayReadyDispatchData,
+} from "discord-api-types/v10";
+import { defineEvent } from "../../src/index.ts";
+import { createTestBot } from "../fixtures/test-bot.ts";
+
+function assertEventTyping(): void {
+	defineEvent({
+		event: GatewayDispatchEvents.MessageCreate,
+		hooks: {
+			onError: (ctx) => {
+				const _message: GatewayMessageCreateDispatchData = ctx.event;
+				void _message;
+			},
+		},
+		handler: (ctx) => {
+			const _message: GatewayMessageCreateDispatchData = ctx.event;
+			// @ts-expect-error MessageCreate data is a message, not Ready data; fails if ctx.event widens to any
+			const _ready: GatewayReadyDispatchData = ctx.event;
+			void _message;
+			void _ready;
+		},
+	});
+}
+
+void assertEventTyping;
 
 describe("type-safe event definitions", () => {
-	it("defineEvent infers event type from event name", () => {
-		const evt = defineEvent({
-			event: GatewayDispatchEvents.MessageCreate,
-			handler: async (ctx) => {
-				const _msg: GatewayMessageCreateDispatchData = ctx.event;
-				void _msg;
-			},
+	it("gives handlers the dispatched payload and shard id", async () => {
+		let received: { content: string; shardId: number } | undefined;
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					handler: (ctx) => {
+						received = { content: ctx.event.content, shardId: ctx.shardId };
+					},
+				}),
+			],
 		});
 
-		assert.strictEqual(evt.type, DefinitionType.Event);
-		assert.strictEqual(evt.event, GatewayDispatchEvents.MessageCreate);
-	});
+		await dispatch(GatewayDispatchEvents.MessageCreate, { content: "hello", author: { id: "1" } }, 3);
 
-	it("default priority is 0", () => {
-		const evt = defineEvent({
-			event: GatewayDispatchEvents.Ready,
-			handler: async () => {},
-		});
-
-		assert.strictEqual(evt.priority, 0);
-	});
-
-	it("typed event handler receives correct payload", async () => {
-		let receivedContent: string | undefined;
-
-		const evt = defineEvent({
-			event: GatewayDispatchEvents.MessageCreate,
-			handler: async (ctx) => {
-				receivedContent = ctx.event.content;
-			},
-		});
-
-		const router = createEventRouter([evt], {});
-		const mockPayload = { content: "hello", author: { id: "1" } };
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, mockPayload, createMockBot(), 0);
-
-		assert.strictEqual(receivedContent, "hello");
-	});
-
-	it("passes shardId to event context", async () => {
-		let receivedShardId: number | undefined;
-
-		const evt = defineEvent({
-			event: GatewayDispatchEvents.Ready,
-			handler: async (ctx) => {
-				receivedShardId = ctx.shardId;
-			},
-		});
-
-		const router = createEventRouter([evt], {});
-		await router.dispatch(GatewayDispatchEvents.Ready, {}, createMockBot(), 3);
-
-		assert.strictEqual(receivedShardId, 3);
+		assert.ok(received);
+		assert.strictEqual(received.content, "hello");
+		assert.strictEqual(received.shardId, 3);
 	});
 });

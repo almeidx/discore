@@ -1,41 +1,39 @@
-import type { CollectComponentsOptions, ComponentCollector } from "../types/contexts.ts";
-import type { ComponentInteractionContext } from "../types/internal.ts";
-import type { CollectorStore } from "./collector-store.ts";
+import type { ComponentInteractionContext } from "../components/context.ts";
+import type { CollectorOptions, CollectorStore } from "./collector-store.ts";
 
-type ComponentCollectorStore = CollectorStore<ComponentInteractionContext>;
+type EndReason = "timeout" | "max" | "manual";
 
-interface DeferredPromise<T> {
-	resolve: (value: T) => void;
-	promise: Promise<T>;
+/** Options for `ctx.collectComponents()`. */
+export interface CollectComponentsOptions extends CollectorOptions<ComponentInteractionContext> {
+	max?: number;
+	onEnd?: (collected: ComponentInteractionContext[], reason: EndReason) => void;
 }
 
-function deferred<T>(): DeferredPromise<T> {
-	let resolve!: (value: T) => void;
-	const promise = new Promise<T>((res) => {
-		resolve = res;
-	});
-	return { resolve, promise };
+/** Async iterator that yields component interactions. Call {@link stop} to end collection early. */
+export interface ComponentCollector extends AsyncIterableIterator<ComponentInteractionContext> {
+	stop(): void;
 }
+
+type Result = IteratorResult<ComponentInteractionContext>;
 
 export function collectComponents(
-	store: ComponentCollectorStore,
+	store: CollectorStore<ComponentInteractionContext>,
 	options: CollectComponentsOptions,
 ): ComponentCollector {
 	const collected: ComponentInteractionContext[] = [];
 	const buffer: ComponentInteractionContext[] = [];
+	const waiting: ((result: Result) => void)[] = [];
 	let stopped = false;
-	const pending: DeferredPromise<IteratorResult<ComponentInteractionContext>>[] = [];
 
-	function end(reason: "timeout" | "max" | "manual"): void {
+	function end(reason: EndReason): void {
 		if (stopped) return;
 		stopped = true;
 		clearTimeout(timer);
 		store.unregister(collector);
 		options.onEnd?.(collected, reason);
-		for (const deferredResult of pending) {
-			deferredResult.resolve({ value: undefined, done: true });
+		for (const resolve of waiting.splice(0)) {
+			resolve({ value: undefined, done: true });
 		}
-		pending.length = 0;
 	}
 
 	const timer = setTimeout(() => end("timeout"), options.timeout);
@@ -45,9 +43,9 @@ export function collectComponents(
 		handle(ctx: ComponentInteractionContext) {
 			collected.push(ctx);
 
-			const nextPending = pending.shift();
-			if (nextPending) {
-				nextPending.resolve({ value: ctx, done: false });
+			const resolve = waiting.shift();
+			if (resolve) {
+				resolve({ value: ctx, done: false });
 			} else {
 				buffer.push(ctx);
 			}
@@ -60,29 +58,29 @@ export function collectComponents(
 
 	store.register(collector);
 
-	const iterator: ComponentCollector = {
+	return {
 		stop() {
 			end("manual");
 		},
 
-		next(): Promise<IteratorResult<ComponentInteractionContext>> {
+		next(): Promise<Result> {
 			if (buffer.length > 0) {
 				return Promise.resolve({ value: buffer.shift()!, done: false });
 			}
 			if (stopped) {
 				return Promise.resolve({ value: undefined, done: true });
 			}
-			const deferredResult = deferred<IteratorResult<ComponentInteractionContext>>();
-			pending.push(deferredResult);
-			return deferredResult.promise;
+			const { promise, resolve } = Promise.withResolvers<Result>();
+			waiting.push(resolve);
+			return promise;
 		},
 
-		return(): Promise<IteratorResult<ComponentInteractionContext>> {
+		return(): Promise<Result> {
 			end("manual");
 			return Promise.resolve({ value: undefined, done: true });
 		},
 
-		throw(e?: unknown): Promise<IteratorResult<ComponentInteractionContext>> {
+		throw(e?: unknown): Promise<Result> {
 			end("manual");
 			return Promise.reject(e);
 		},
@@ -91,6 +89,4 @@ export function collectComponents(
 			return this;
 		},
 	};
-
-	return iterator;
 }

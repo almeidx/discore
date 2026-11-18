@@ -1,14 +1,11 @@
 import { InteractionType, ApplicationCommandType, ComponentType } from "discord-api-types/v10";
-import type {
-	CommandContext,
-	ButtonContext,
-	SelectMenuContext,
-	ModalContext,
-	AutocompleteContext,
-	UserCommandContext,
-	MessageCommandContext,
-} from "./types/contexts.ts";
-import type { AnyInteractionContext } from "./types/hooks.ts";
+import type { AutocompleteContext } from "./autocomplete/autocomplete.ts";
+import type { CommandContext } from "./commands/chat-input.ts";
+import type { MessageCommandContext, UserCommandContext } from "./commands/context-menu.ts";
+import type { ButtonContext } from "./components/button.ts";
+import type { ModalContext } from "./components/modal.ts";
+import type { SelectMenuContext } from "./components/select-menu.ts";
+import type { AnyInteractionContext } from "./hooks.ts";
 
 export function isCommand(ctx: AnyInteractionContext): ctx is CommandContext {
 	return (

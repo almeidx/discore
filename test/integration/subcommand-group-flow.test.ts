@@ -1,92 +1,88 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
-import { GatewayDispatchEvents } from "discord-api-types/v10";
-import { createBot } from "../../src/bot.ts";
-import { defineCommandGroup } from "../../src/definitions/command-group.ts";
-import { defineCommand } from "../../src/definitions/command.ts";
-import type { SubcommandGroup } from "../../src/types/definitions.ts";
-import { subcommandGroupInteraction } from "../fixtures/interactions.ts";
-import { createMockREST } from "../fixtures/mock-api.ts";
-import { createMockGateway } from "../fixtures/mock-gateway.ts";
+import { ApplicationCommandOptionType, type APIUser } from "discord-api-types/v10";
+import { defineCommand, defineCommandGroup, type SubcommandGroup } from "../../src/index.ts";
+import { subcommandGroupInteraction, subcommandInteraction } from "../fixtures/interactions.ts";
+import { createTestBot } from "../fixtures/test-bot.ts";
 
-describe("subcommand group flow integration", () => {
-	it("routes subcommand group interaction to correct handler", async () => {
-		const addHandler = mock.fn(async () => {});
-		const removeHandler = mock.fn(async () => {});
+function createManageBot() {
+	const handlers = { kick: mock.fn(() => {}), add: mock.fn(() => {}), remove: mock.fn(() => {}) };
+	const roleGroup: SubcommandGroup = {
+		name: "role",
+		description: "d",
+		subcommands: [
+			defineCommand({ data: { name: "add", description: "d" }, handler: handlers.add }),
+			defineCommand({ data: { name: "remove", description: "d" }, handler: handlers.remove }),
+		],
+	};
+	const group = defineCommandGroup({
+		data: { name: "manage", description: "d" },
+		subcommands: [defineCommand({ data: { name: "kick", description: "d" }, handler: handlers.kick }), roleGroup],
+	});
+	const callCounts = () => ({
+		kick: handlers.kick.mock.callCount(),
+		add: handlers.add.mock.callCount(),
+		remove: handlers.remove.mock.callCount(),
+	});
+	return { ...createTestBot({ commands: [group] }), callCounts };
+}
 
-		const add = defineCommand({
-			data: { name: "add", description: "Add a role" },
-			handler: addHandler,
-		});
+describe("command group flow", () => {
+	it("routes a subcommand inside a subcommand group", async () => {
+		const { interact, callCounts } = createManageBot();
 
-		const remove = defineCommand({
-			data: { name: "remove", description: "Remove a role" },
-			handler: removeHandler,
-		});
+		await interact(subcommandGroupInteraction("manage", "role", "add"));
 
-		const roleGroup: SubcommandGroup = {
-			name: "role",
-			description: "Role management",
-			subcommands: [add, remove],
-		};
-
-		const group = defineCommandGroup({
-			data: { name: "manage", description: "Management" },
-			subcommands: [roleGroup],
-		});
-
-		const gateway = createMockGateway();
-		createBot({
-			rest: createMockREST(),
-			gateway: gateway as any,
-			commands: [group],
-		});
-
-		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, subcommandGroupInteraction("manage", "role", "add"));
-
-		await new Promise((r) => setTimeout(r, 50));
-
-		assert.strictEqual(addHandler.mock.callCount(), 1);
-		assert.strictEqual(removeHandler.mock.callCount(), 0);
+		assert.deepStrictEqual(callCounts(), { kick: 0, add: 1, remove: 0 });
 	});
 
-	it("routes second subcommand in group correctly", async () => {
-		const addHandler = mock.fn(async () => {});
-		const removeHandler = mock.fn(async () => {});
+	it("routes to the second subcommand of a subcommand group", async () => {
+		const { interact, callCounts } = createManageBot();
 
-		const add = defineCommand({
-			data: { name: "add", description: "Add" },
-			handler: addHandler,
+		await interact(subcommandGroupInteraction("manage", "role", "remove"));
+
+		assert.deepStrictEqual(callCounts(), { kick: 0, add: 0, remove: 1 });
+	});
+
+	it("routes a top-level subcommand of a group", async () => {
+		const { interact, callCounts } = createManageBot();
+
+		await interact(subcommandInteraction("manage", "kick"));
+
+		assert.deepStrictEqual(callCounts(), { kick: 1, add: 0, remove: 0 });
+	});
+
+	it("does not route a top-level subcommand name to a subcommand nested in a group", async () => {
+		const { interact, callCounts } = createManageBot();
+
+		await interact(subcommandInteraction("manage", "add"));
+
+		assert.deepStrictEqual(callCounts(), { kick: 0, add: 0, remove: 0 });
+	});
+
+	it("resolves the invoked subcommand's options", async () => {
+		const user = { id: "999", username: "test", discriminator: "0", avatar: null, global_name: null } satisfies APIUser;
+		let received: unknown;
+		const ban = defineCommand({
+			data: {
+				name: "ban",
+				description: "d",
+				options: [{ name: "user", type: ApplicationCommandOptionType.User, description: "d", required: true }],
+			},
+			handler: (ctx) => {
+				received = ctx.options;
+			},
 		});
-
-		const remove = defineCommand({
-			data: { name: "remove", description: "Remove" },
-			handler: removeHandler,
+		const { interact } = createTestBot({
+			commands: [defineCommandGroup({ data: { name: "mod", description: "d" }, subcommands: [ban] })],
 		});
+		const interaction = subcommandInteraction("mod", "ban", [
+			{ name: "user", type: ApplicationCommandOptionType.User, value: user.id },
+		]);
+		interaction.data.resolved = { users: { [user.id]: user } };
 
-		const roleGroup: SubcommandGroup = {
-			name: "role",
-			description: "Role management",
-			subcommands: [add, remove],
-		};
+		await interact(interaction);
 
-		const group = defineCommandGroup({
-			data: { name: "manage", description: "Management" },
-			subcommands: [roleGroup],
-		});
-
-		const gateway = createMockGateway();
-		createBot({
-			rest: createMockREST(),
-			gateway: gateway as any,
-			commands: [group],
-		});
-
-		gateway.dispatch(GatewayDispatchEvents.InteractionCreate, subcommandGroupInteraction("manage", "role", "remove"));
-
-		await new Promise((r) => setTimeout(r, 50));
-
-		assert.strictEqual(addHandler.mock.callCount(), 0);
-		assert.strictEqual(removeHandler.mock.callCount(), 1);
+		assert.deepStrictEqual(received, { user: { user, member: undefined } });
 	});
 });

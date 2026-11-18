@@ -1,26 +1,25 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ApplicationCommandOptionType, ApplicationCommandType } from "discord-api-types/v10";
-import type { RESTPutAPIApplicationCommandsJSONBody } from "discord-api-types/v10";
-import { defineCommandGroup } from "../../src/definitions/command-group.ts";
-import { defineCommand } from "../../src/definitions/command.ts";
-import { defineMessageCommand } from "../../src/definitions/message-command.ts";
-import { defineUserCommand } from "../../src/definitions/user-command.ts";
-import { commandToPayload, type CommandPayload, publishCommands } from "../../src/index.ts";
-import type { CommandDefinition, SubcommandGroup } from "../../src/types/definitions.ts";
-import { createMockAPI } from "../fixtures/mock-api.ts";
+import {
+	ApplicationCommandOptionType,
+	ApplicationCommandType,
+	type RESTPutAPIApplicationCommandsJSONBody,
+} from "discord-api-types/v10";
+import {
+	commandToPayload,
+	defineCommand,
+	defineCommandGroup,
+	defineMessageCommand,
+	defineUserCommand,
+	publishCommands,
+} from "../../src/index.ts";
+import { asAPI, createMockAPI } from "../fixtures/mock-api.ts";
 
-describe("publishCommands", () => {
-	it("command definitions produce correct meta", () => {
-		const cmd = defineCommand({
-			data: { name: "ping", description: "Pong!" },
-			handler: async () => {},
-		});
+const ping = defineCommand({ data: { name: "ping", description: "Pong!" }, handler: () => {} });
 
-		assert.strictEqual(cmd.data.name, "ping");
-		assert.strictEqual(cmd.data.description, "Pong!");
-		assert.deepStrictEqual(cmd.data.options, []);
-		assert.deepStrictEqual(commandToPayload(cmd), {
+describe("commandToPayload", () => {
+	it("serializes a chat input command, defaulting options to an empty list", () => {
+		assert.deepStrictEqual(commandToPayload(ping), {
 			description: "Pong!",
 			name: "ping",
 			options: [],
@@ -33,64 +32,31 @@ describe("publishCommands", () => {
 			data: {
 				name: "echo",
 				description: "Echo text",
-				options: [
-					{ name: "text", type: ApplicationCommandOptionType.String, description: "Text", required: true },
-				] as const,
+				options: [{ name: "text", type: ApplicationCommandOptionType.String, description: "Text", required: true }],
 			},
-			handler: async () => {},
+			handler: () => {},
 		});
 		const originalData = structuredClone(cmd.data);
 
 		const payload = commandToPayload(cmd);
 
 		assert.ok("options" in payload);
+		assert.deepStrictEqual(payload.options, originalData.options);
 		assert.notStrictEqual(payload.options, cmd.data.options);
 		assert.deepStrictEqual(cmd.data, originalData);
 	});
 
-	it("combines serialized definitions with legacy command payloads", () => {
-		const legacyPayload: CommandPayload = {
-			description: "Legacy command",
-			name: "legacy",
-			type: ApplicationCommandType.ChatInput,
-		};
-		const cmd = defineCommand({
-			data: { name: "ping", description: "Pong!" },
-			handler: async () => {},
-		});
-
-		const body: RESTPutAPIApplicationCommandsJSONBody = [legacyPayload, commandToPayload(cmd)];
-
-		assert.deepStrictEqual(
-			body.map((payload) => payload.name),
-			["legacy", "ping"],
-		);
-	});
-
-	it("command group definitions produce correct meta", () => {
+	it("serializes a command group's subcommands as Subcommand options", () => {
 		const ban = defineCommand({
 			data: {
 				name: "ban",
 				description: "Ban a user",
-				options: [
-					{ name: "user", type: ApplicationCommandOptionType.User, description: "The user", required: true },
-				] as const,
+				options: [{ name: "user", type: ApplicationCommandOptionType.User, description: "The user", required: true }],
 			},
-			handler: async () => {},
+			handler: () => {},
 		});
+		const group = defineCommandGroup({ data: { name: "mod", description: "Mod commands" }, subcommands: [ban] });
 
-		const group = defineCommandGroup({
-			data: { name: "mod", description: "Mod commands" },
-			subcommands: [ban],
-		});
-
-		assert.strictEqual(group.data.name, "mod");
-		assert.strictEqual(group.subcommands.length, 1);
-
-		const first = group.subcommands[0] as CommandDefinition;
-		assert.strictEqual(first.data.name, "ban");
-		assert.strictEqual(first.data.options[0]?.name, "user");
-		assert.strictEqual(first.data.options[0]?.type, ApplicationCommandOptionType.User);
 		assert.deepStrictEqual(commandToPayload(group), {
 			description: "Mod commands",
 			name: "mod",
@@ -98,14 +64,7 @@ describe("publishCommands", () => {
 				{
 					description: "Ban a user",
 					name: "ban",
-					options: [
-						{
-							description: "The user",
-							name: "user",
-							required: true,
-							type: ApplicationCommandOptionType.User,
-						},
-					],
+					options: [{ description: "The user", name: "user", required: true, type: ApplicationCommandOptionType.User }],
 					type: ApplicationCommandOptionType.Subcommand,
 				},
 			],
@@ -113,86 +72,31 @@ describe("publishCommands", () => {
 		});
 	});
 
-	it("user command definition produces correct meta", () => {
-		const cmd = defineUserCommand({
-			data: { name: "User Info" },
-			handler: async () => {},
-		});
-
-		assert.strictEqual(cmd.data.name, "User Info");
-		assert.deepStrictEqual(commandToPayload(cmd), {
-			name: "User Info",
-			type: ApplicationCommandType.User,
-		});
-	});
-
-	it("message command definition produces correct meta", () => {
-		const cmd = defineMessageCommand({
-			data: { name: "Bookmark" },
-			handler: async () => {},
-		});
-
-		assert.strictEqual(cmd.data.name, "Bookmark");
-		assert.deepStrictEqual(commandToPayload(cmd), {
-			name: "Bookmark",
-			type: ApplicationCommandType.Message,
-		});
-	});
-
-	it("command group with subcommand groups produces correct structure", () => {
-		const add = defineCommand({
-			data: { name: "add", description: "Add a role" },
-			handler: async () => {},
-		});
-
-		const remove = defineCommand({
-			data: { name: "remove", description: "Remove a role" },
-			handler: async () => {},
-		});
-
-		const roleGroup: SubcommandGroup = {
-			name: "role",
-			description: "Role management",
-			subcommands: [add, remove],
-		};
-
-		const kick = defineCommand({
-			data: { name: "kick", description: "Kick a user" },
-			handler: async () => {},
-		});
-
+	it("serializes subcommand groups as SubcommandGroup options next to direct subcommands", () => {
+		const subcommand = (name: string, description: string) =>
+			defineCommand({ data: { name, description }, handler: () => {} });
 		const group = defineCommandGroup({
 			data: { name: "manage", description: "Management" },
-			subcommands: [kick, roleGroup],
+			subcommands: [
+				subcommand("kick", "Kick a user"),
+				{
+					name: "role",
+					description: "Role management",
+					subcommands: [subcommand("add", "Add a role"), subcommand("remove", "Remove a role")],
+				},
+			],
 		});
 
-		assert.strictEqual(group.subcommands.length, 2);
-		assert.ok("type" in group.subcommands[0]!);
-		assert.ok(!("type" in group.subcommands[1]!));
-
-		const sg = group.subcommands[1] as SubcommandGroup;
-		assert.strictEqual(sg.name, "role");
-		assert.strictEqual(sg.subcommands.length, 2);
 		assert.deepStrictEqual(commandToPayload(group), {
 			description: "Management",
 			name: "manage",
 			options: [
-				{
-					description: "Kick a user",
-					name: "kick",
-					options: [],
-					type: ApplicationCommandOptionType.Subcommand,
-				},
+				{ description: "Kick a user", name: "kick", options: [], type: ApplicationCommandOptionType.Subcommand },
 				{
 					description: "Role management",
 					name: "role",
 					options: [
-						{
-							description: "Add a role",
-							name: "add",
-							options: [],
-							type: ApplicationCommandOptionType.Subcommand,
-						},
+						{ description: "Add a role", name: "add", options: [], type: ApplicationCommandOptionType.Subcommand },
 						{
 							description: "Remove a role",
 							name: "remove",
@@ -207,45 +111,54 @@ describe("publishCommands", () => {
 		});
 	});
 
-	it("publishes command payloads through the API", async () => {
-		const api = createMockAPI();
-		api.applicationCommands.bulkOverwriteGlobalCommands.mock.mockImplementation(
-			async (_appId: string, body: unknown) => body,
-		);
+	it("serializes user and message context menu commands", () => {
+		const userCommand = defineUserCommand({ data: { name: "User Info" }, handler: () => {} });
+		const messageCommand = defineMessageCommand({ data: { name: "Bookmark" }, handler: () => {} });
 
-		const cmd = defineCommand({
-			data: { name: "ping", description: "Pong!" },
-			handler: async () => {},
+		assert.deepStrictEqual(commandToPayload(userCommand), { name: "User Info", type: ApplicationCommandType.User });
+		assert.deepStrictEqual(commandToPayload(messageCommand), {
+			name: "Bookmark",
+			type: ApplicationCommandType.Message,
 		});
+	});
+});
 
-		const result = await publishCommands({ api: api as any, applicationId: "app-id", commands: [cmd] });
+describe("publishCommands", () => {
+	// `satisfies` also checks at compile time that serialized payloads are a valid bulk-overwrite body.
+	const expectedBody = [commandToPayload(ping)] satisfies RESTPutAPIApplicationCommandsJSONBody;
 
-		assert.strictEqual(api.applicationCommands.bulkOverwriteGlobalCommands.mock.callCount(), 1);
-		const call = api.applicationCommands.bulkOverwriteGlobalCommands.mock.calls[0]!;
-		assert.strictEqual(call.arguments[0], "app-id");
-		assert.deepStrictEqual(result, [{ name: "ping", description: "Pong!", options: [], type: 1 }]);
+	it("bulk-overwrites global commands and returns the API result", async () => {
+		const api = createMockAPI();
+		const published = [{ id: "1" }];
+		api.applicationCommands.bulkOverwriteGlobalCommands.mock.mockImplementation(async () => published);
+
+		const result = await publishCommands({ api: asAPI(api), applicationId: "app-id", commands: [ping] });
+
+		assert.deepStrictEqual(
+			api.applicationCommands.bulkOverwriteGlobalCommands.mock.calls.map((call) => call.arguments),
+			[["app-id", expectedBody]],
+		);
+		assert.strictEqual(api.applicationCommands.bulkOverwriteGuildCommands.mock.callCount(), 0);
+		assert.strictEqual(result, published);
 	});
 
-	it("publishes command payloads to a guild", async () => {
+	it("bulk-overwrites guild commands when a guildId is given", async () => {
 		const api = createMockAPI();
-		api.applicationCommands.bulkOverwriteGuildCommands.mock.mockImplementation(
-			async (_appId: string, _guildId: string, body: unknown) => body,
-		);
-		const cmd = defineCommand({
-			data: { name: "ping", description: "Pong!" },
-			handler: async () => {},
-		});
+		const published = [{ id: "1" }];
+		api.applicationCommands.bulkOverwriteGuildCommands.mock.mockImplementation(async () => published);
 
 		const result = await publishCommands({
-			api: api as any,
+			api: asAPI(api),
 			applicationId: "app-id",
-			commands: [cmd],
+			commands: [ping],
 			guildId: "guild-id",
 		});
 
-		assert.strictEqual(api.applicationCommands.bulkOverwriteGuildCommands.mock.callCount(), 1);
-		const call = api.applicationCommands.bulkOverwriteGuildCommands.mock.calls[0]!;
-		assert.deepStrictEqual(call.arguments.slice(0, 2), ["app-id", "guild-id"]);
-		assert.deepStrictEqual(result, [{ name: "ping", description: "Pong!", options: [], type: 1 }]);
+		assert.deepStrictEqual(
+			api.applicationCommands.bulkOverwriteGuildCommands.mock.calls.map((call) => call.arguments),
+			[["app-id", "guild-id", expectedBody]],
+		);
+		assert.strictEqual(api.applicationCommands.bulkOverwriteGlobalCommands.mock.callCount(), 0);
+		assert.strictEqual(result, published);
 	});
 });

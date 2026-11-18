@@ -36,7 +36,7 @@ export function chatInputInteraction(
 			id: "444444444444444444",
 			name,
 			type: ApplicationCommandType.ChatInput,
-			options: options as any,
+			options,
 			resolved: {},
 		},
 	} as unknown as APIChatInputApplicationCommandInteraction;
@@ -60,7 +60,7 @@ export function subcommandInteraction(
 					type: ApplicationCommandOptionType.Subcommand,
 					options,
 				},
-			] as any,
+			],
 			resolved: {},
 		},
 	} as unknown as APIChatInputApplicationCommandInteraction;
@@ -154,7 +154,7 @@ export function autocompleteInteraction(
 					...focusedOption,
 					focused: true,
 				},
-			] as any,
+			],
 		},
 	} as unknown as APIApplicationCommandAutocompleteInteraction;
 }
@@ -223,7 +223,6 @@ export function subcommandGroupInteraction(
 	groupName: string,
 	subGroupName: string,
 	subName: string,
-	options: Array<{ name: string; type: number; value: unknown }> = [],
 ): APIChatInputApplicationCommandInteraction {
 	return {
 		...BASE,
@@ -240,11 +239,11 @@ export function subcommandGroupInteraction(
 						{
 							name: subName,
 							type: ApplicationCommandOptionType.Subcommand,
-							options,
+							options: [],
 						},
 					],
 				},
-			] as any,
+			],
 			resolved: {},
 		},
 	} as unknown as APIChatInputApplicationCommandInteraction;

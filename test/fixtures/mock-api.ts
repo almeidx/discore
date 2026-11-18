@@ -1,81 +1,69 @@
-import { mock } from "node:test";
+import { mock, type Mock } from "node:test";
+import type { API } from "@discordjs/core";
+import type { APIMessage } from "discord-api-types/v10";
 
-export function createMockAPI() {
-	return {
-		interactions: {
-			reply: mock.fn(async () => undefined),
-			defer: mock.fn(async () => undefined),
-			updateMessage: mock.fn(async () => undefined),
-			deferMessageUpdate: mock.fn(async () => undefined),
-			followUp: mock.fn(async () => ({
-				id: "1",
-				channel_id: "1",
-				author: {},
-				content: "",
-				timestamp: "",
-				edited_timestamp: null,
-				tts: false,
-				mention_everyone: false,
-				mentions: [],
-				mention_roles: [],
-				attachments: [],
-				embeds: [],
-				pinned: false,
-				type: 0,
-			})),
-			editReply: mock.fn(async () => ({
-				id: "1",
-				channel_id: "1",
-				author: {},
-				content: "",
-				timestamp: "",
-				edited_timestamp: null,
-				tts: false,
-				mention_everyone: false,
-				mentions: [],
-				mention_roles: [],
-				attachments: [],
-				embeds: [],
-				pinned: false,
-				type: 0,
-			})),
-			deleteReply: mock.fn(async () => undefined),
-			getOriginalReply: mock.fn(async () => ({
-				id: "1",
-				channel_id: "1",
-				author: {},
-				content: "",
-				timestamp: "",
-				edited_timestamp: null,
-				tts: false,
-				mention_everyone: false,
-				mentions: [],
-				mention_roles: [],
-				attachments: [],
-				embeds: [],
-				pinned: false,
-				type: 0,
-			})),
-			createModal: mock.fn(async () => undefined),
-			createAutocompleteResponse: mock.fn(async () => undefined),
-		},
-		applicationCommands: {
-			bulkOverwriteGlobalCommands: mock.fn(async () => []),
-			bulkOverwriteGuildCommands: mock.fn(async () => []),
-		},
-		applications: {
-			getCurrent: mock.fn(async () => ({ id: "123456789" })),
-		},
-	} as any;
+type Spy = Mock<(...args: unknown[]) => Promise<unknown>>;
+
+export interface MockAPI {
+	interactions: Record<
+		| "reply"
+		| "defer"
+		| "updateMessage"
+		| "deferMessageUpdate"
+		| "followUp"
+		| "editReply"
+		| "deleteReply"
+		| "getOriginalReply"
+		| "createModal"
+		| "createAutocompleteResponse",
+		Spy
+	>;
+	applicationCommands: Record<"bulkOverwriteGlobalCommands" | "bulkOverwriteGuildCommands", Spy>;
 }
 
-export function createMockREST() {
+const message = {
+	id: "1",
+	channel_id: "1",
+	author: {},
+	content: "",
+	timestamp: "",
+	edited_timestamp: null,
+	tts: false,
+	mention_everyone: false,
+	mentions: [],
+	mention_roles: [],
+	attachments: [],
+	embeds: [],
+	pinned: false,
+	type: 0,
+} as unknown as APIMessage;
+
+function spy(result: unknown): Spy {
+	return mock.fn(async (..._args: unknown[]) => result);
+}
+
+export function createMockAPI(): MockAPI {
 	return {
-		post: mock.fn(async () => undefined),
-		get: mock.fn(async () => undefined),
-		patch: mock.fn(async () => undefined),
-		delete: mock.fn(async () => undefined),
-		put: mock.fn(async () => undefined),
-		cdn: {},
-	} as any;
+		interactions: {
+			reply: spy(undefined),
+			defer: spy(undefined),
+			updateMessage: spy(undefined),
+			deferMessageUpdate: spy(undefined),
+			followUp: spy(message),
+			editReply: spy(message),
+			deleteReply: spy(undefined),
+			getOriginalReply: spy(message),
+			createModal: spy(undefined),
+			createAutocompleteResponse: spy(undefined),
+		},
+		applicationCommands: {
+			bulkOverwriteGlobalCommands: spy([]),
+			bulkOverwriteGuildCommands: spy([]),
+		},
+	};
+}
+
+/** The mock implements only the endpoints the framework calls. */
+export function asAPI(api: MockAPI): API {
+	return api as unknown as API;
 }

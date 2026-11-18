@@ -1,296 +1,250 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
 import { GatewayDispatchEvents } from "discord-api-types/v10";
-import { createEventRouter } from "../../src/routing/event-router.ts";
-import { DefinitionType, type EventDefinition } from "../../src/types/definitions.ts";
-import { createMockBot } from "../fixtures/mock-bot.ts";
+import { defineEvent, type GlobalHooks } from "../../src/index.ts";
+import { createTestBot } from "../fixtures/test-bot.ts";
 
-describe("createEventRouter", () => {
-	it("dispatches event to matching handler", async () => {
-		const handler = mock.fn(async () => {});
-		const events: EventDefinition[] = [
-			{ type: DefinitionType.Event, event: GatewayDispatchEvents.MessageCreate, priority: 0, handler },
-		];
+function thrower(message: string) {
+	return async () => {
+		throw new Error(message);
+	};
+}
 
-		const router = createEventRouter(events, {});
+function errorMessages(error: unknown): string[] {
+	assert.ok(error instanceof AggregateError);
+	return Array.from(error.errors as Iterable<unknown>, (cause) => (cause as Error).message);
+}
 
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, { content: "hi" }, createMockBot(), 0);
+describe("event dispatch", () => {
+	it("runs only the handlers registered for the dispatched event", async () => {
+		const onMessage = mock.fn();
+		const onGuild = mock.fn();
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: onMessage }),
+				defineEvent({ event: GatewayDispatchEvents.GuildCreate, handler: onGuild }),
+			],
+		});
+
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+		await dispatch(GatewayDispatchEvents.TypingStart, {});
+
+		assert.strictEqual(onMessage.mock.callCount(), 1);
+		assert.strictEqual(onGuild.mock.callCount(), 0);
+	});
+
+	it("runs handlers in ascending priority order, defaulting to 0", async () => {
+		const order: string[] = [];
+		const handler = (label: string) => () => {
+			order.push(label);
+		};
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 10, handler: handler("10") }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: handler("default") }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 5, handler: handler("5") }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: -1, handler: handler("-1") }),
+			],
+		});
+
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+
+		assert.deepStrictEqual(order, ["-1", "default", "5", "10"]);
+	});
+
+	it("awaits each handler before starting the next", async () => {
+		const order: string[] = [];
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					priority: 0,
+					handler: async () => {
+						const { promise, resolve } = Promise.withResolvers<void>();
+						setImmediate(resolve);
+						await promise;
+						order.push("first");
+					},
+				}),
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					priority: 1,
+					handler: () => {
+						order.push("second");
+					},
+				}),
+			],
+		});
+
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+
+		assert.deepStrictEqual(order, ["first", "second"]);
+	});
+
+	it("runs once handlers on the first dispatch only", async () => {
+		const once = mock.fn();
+		const always = mock.fn();
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, once: true, handler: once }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: always }),
+			],
+		});
+
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+
+		assert.strictEqual(once.mock.callCount(), 1);
+		assert.strictEqual(always.mock.callCount(), 2);
+	});
+
+	it("removes a once handler even when it throws", async () => {
+		const handler = mock.fn(thrower("boom"));
+		const { dispatch } = createTestBot({
+			events: [defineEvent({ event: GatewayDispatchEvents.MessageCreate, once: true, handler })],
+			hooks: { onEventError: () => {} },
+		});
+
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
 
 		assert.strictEqual(handler.mock.callCount(), 1);
 	});
 
-	it("does nothing for unregistered event", async () => {
-		const router = createEventRouter([], {});
+	it("rethrows a handler error when no error hook handles it", async () => {
+		const { dispatch } = createTestBot({
+			events: [defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: thrower("boom") })],
+		});
 
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
+		await assert.rejects(dispatch(GatewayDispatchEvents.MessageCreate, {}), { message: "boom" });
 	});
 
-	it("executes multiple handlers in priority order", async () => {
-		const order: number[] = [];
+	it("passes handler errors to onEventError instead of rethrowing", async () => {
+		const payload = { content: "hi" };
+		const onEventError = mock.fn<NonNullable<GlobalHooks["onEventError"]>>();
+		const { dispatch } = createTestBot({
+			events: [defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: thrower("boom") })],
+			hooks: { onEventError },
+		});
 
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 10,
-				handler: async () => {
-					order.push(10);
-				},
-			},
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					order.push(0);
-				},
-			},
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 5,
-				handler: async () => {
-					order.push(5);
-				},
-			},
-		];
-
-		const router = createEventRouter(events, {});
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
-
-		assert.deepStrictEqual(order, [0, 5, 10]);
-	});
-
-	it("awaits handlers sequentially by priority", async () => {
-		const order: string[] = [];
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					await new Promise((resolve) => setTimeout(resolve, 10));
-					order.push("low");
-				},
-			},
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 10,
-				handler: async () => {
-					order.push("high");
-				},
-			},
-		];
-
-		const router = createEventRouter(events, {});
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
-
-		assert.deepStrictEqual(order, ["low", "high"]);
-	});
-
-	it("calls onEventError when handler throws", async () => {
-		const onEventError = mock.fn(async () => {});
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
-
-		const router = createEventRouter(events, { onEventError });
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
+		await dispatch(GatewayDispatchEvents.MessageCreate, payload, 2);
 
 		assert.strictEqual(onEventError.mock.callCount(), 1);
-		const errorArg = onEventError.mock.calls[0]!.arguments as unknown[];
-		assert.strictEqual((errorArg[1] as Error).message, "boom");
+		const [ctx, error] = onEventError.mock.calls[0]!.arguments;
+		assert.strictEqual(ctx.event, payload);
+		assert.strictEqual(ctx.shardId, 2);
+		assert.ok(error instanceof Error);
+		assert.strictEqual(error.message, "boom");
 	});
 
-	it("runs per-event onError before global onEventError", async () => {
+	it("runs the per-event onError before the global onEventError", async () => {
 		const order: string[] = [];
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				hooks: {
-					onError: async () => {
-						order.push("event");
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					hooks: {
+						onError: (_ctx, error) => {
+							order.push(`event:${(error as Error).message}`);
+						},
 					},
+					handler: thrower("boom"),
+				}),
+			],
+			hooks: {
+				onEventError: (_ctx, error) => {
+					order.push(`global:${(error as Error).message}`);
 				},
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
-
-		const router = createEventRouter(events, {
-			onEventError: async () => {
-				order.push("global");
 			},
 		});
 
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
 
-		assert.deepStrictEqual(order, ["event", "global"]);
+		assert.deepStrictEqual(order, ["event:boom", "global:boom"]);
 	});
 
-	it("does not call global onEventError or rethrow when per-event onError returns false", async () => {
-		const onEventError = mock.fn(async () => {});
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				hooks: {
-					onError: async () => false,
-				},
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
+	it("skips onEventError when the per-event onError returns false", async () => {
+		const onEventError = mock.fn();
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					hooks: { onError: () => false },
+					handler: thrower("boom"),
+				}),
+			],
+			hooks: { onEventError },
+		});
 
-		const router = createEventRouter(events, { onEventError });
+		await dispatch(GatewayDispatchEvents.MessageCreate, {});
 
-		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0));
 		assert.strictEqual(onEventError.mock.callCount(), 0);
 	});
 
-	it("does not rethrow when per-event onError returns false without a global hook", async () => {
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				hooks: {
-					onError: async () => false,
-				},
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
+	it("does not rethrow when the per-event onError returns false and no global hook is set", async () => {
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					hooks: { onError: () => false },
+					handler: thrower("boom"),
+				}),
+			],
+		});
 
-		const router = createEventRouter(events, {});
-
-		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0));
+		await assert.doesNotReject(dispatch(GatewayDispatchEvents.MessageCreate, {}));
 	});
 
-	it("collects a thrown per-event onError with the original handler error", async () => {
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				hooks: {
-					onError: async () => {
-						throw new Error("hook boom");
-					},
-				},
-				handler: async () => {
-					throw new Error("handler boom");
-				},
-			},
-		];
+	it("keeps running later handlers after one throws", async () => {
+		const second = mock.fn();
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 0, handler: thrower("first boom") }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 1, handler: second }),
+			],
+		});
 
-		const router = createEventRouter(events, {});
-
-		await assert.rejects(
-			router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0),
-			(error: unknown) => {
-				assert.ok(error instanceof AggregateError);
-				const messages = Array.from(error.errors as Iterable<unknown>, (cause) => (cause as Error).message);
-				assert.deepStrictEqual(messages, ["hook boom", "handler boom"]);
-				return true;
-			},
-		);
+		await assert.rejects(dispatch(GatewayDispatchEvents.MessageCreate, {}), { message: "first boom" });
+		assert.strictEqual(second.mock.callCount(), 1);
 	});
 
-	it("does not propagate error when onEventError is set", async () => {
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
+	it("collects failures from several handlers into an AggregateError", async () => {
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 0, handler: thrower("first") }),
+				defineEvent({ event: GatewayDispatchEvents.MessageCreate, priority: 1, handler: thrower("second") }),
+			],
+		});
 
-		const router = createEventRouter(events, { onEventError: async () => {} });
-
-		await assert.doesNotReject(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0));
-	});
-
-	it("propagates error when onEventError is not set", async () => {
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					throw new Error("boom");
-				},
-			},
-		];
-
-		const router = createEventRouter(events, {});
-
-		await assert.rejects(router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0), {
-			message: "boom",
+		await assert.rejects(dispatch(GatewayDispatchEvents.MessageCreate, {}), (error: unknown) => {
+			assert.deepStrictEqual(errorMessages(error), ["first", "second"]);
+			return true;
 		});
 	});
 
-	it("continues to next handler when one throws", async () => {
-		const secondHandler = mock.fn(async () => {});
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				handler: async () => {
-					throw new Error("first boom");
-				},
-			},
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 1,
-				handler: secondHandler,
-			},
-		];
+	it("collects a throwing per-event onError together with the handler error", async () => {
+		const { dispatch } = createTestBot({
+			events: [
+				defineEvent({
+					event: GatewayDispatchEvents.MessageCreate,
+					hooks: { onError: thrower("hook boom") },
+					handler: thrower("handler boom"),
+				}),
+			],
+		});
 
-		const router = createEventRouter(events, { onEventError: async () => {} });
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
-
-		assert.strictEqual(secondHandler.mock.callCount(), 1);
+		await assert.rejects(dispatch(GatewayDispatchEvents.MessageCreate, {}), (error: unknown) => {
+			assert.deepStrictEqual(errorMessages(error), ["hook boom", "handler boom"]);
+			return true;
+		});
 	});
 
-	it("removes once handlers even when onEventError handles a thrown error", async () => {
-		let calls = 0;
-		const events: EventDefinition[] = [
-			{
-				type: DefinitionType.Event,
-				event: GatewayDispatchEvents.MessageCreate,
-				priority: 0,
-				once: true,
-				handler: async () => {
-					calls += 1;
-					throw new Error("boom");
-				},
-			},
-		];
+	it("rethrows an error thrown by onEventError", async () => {
+		const { dispatch } = createTestBot({
+			events: [defineEvent({ event: GatewayDispatchEvents.MessageCreate, handler: thrower("boom") })],
+			hooks: { onEventError: thrower("global hook boom") },
+		});
 
-		const router = createEventRouter(events, { onEventError: async () => {} });
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
-		await router.dispatch(GatewayDispatchEvents.MessageCreate, {}, createMockBot(), 0);
-
-		assert.strictEqual(calls, 1);
+		await assert.rejects(dispatch(GatewayDispatchEvents.MessageCreate, {}), { message: "global hook boom" });
 	});
 });
