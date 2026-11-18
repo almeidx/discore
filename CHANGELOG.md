@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.2-alpha.3] - 2026-11-18
+
+- deps: Lock file maintenance (#153)
+- deps: Update patch/minor dependencies (#152)
+- deps: Update Node.js to v26.13.1 (#151)
+- refactor: group src by feature and run all interactions through one pipeline
+- deps: Lock file maintenance (#150)
+- deps: Update patch/minor dependencies (#148)
+- deps: Update Node.js to v26 (#149)
+- deps: Lock file maintenance (#146)
+- deps: Update Node.js to v24.22.1 (#144)
+- deps: Update patch/minor dependencies (#145)
+- deps: Lock file maintenance (#143)
+- deps: Update Node.js to v24.22.0 (#142)
+- deps: Update patch/minor dependencies (#141)
+- deps: Lock file maintenance (#140)
+- deps: Update patch/minor dependencies (#139)
+- chore: remove plans
+- deps: Lock file maintenance (#138)
+- deps: Update patch/minor dependencies (#137)
+- deps: Lock file maintenance (#136)
+- deps: Update patch/minor dependencies (#135)
+- chore: delete CLAUDE.md symlink
+- deps: Lock file maintenance (#134)
+- deps: Update patch/minor dependencies (#133)
+- chore: bump discord.js
+- deps: Lock file maintenance (#132)
+- deps: Update pnpm to v12 (#131)
+- deps: Update patch/minor dependencies (#129)
+- deps: Update Node.js to v24.21.0 (#130)
+- deps: Lock file maintenance (#128)
+- deps: Update patch/minor dependencies (#127)
+- deps: Lock file maintenance (#126)
+- deps: Update Node.js to v24.20.0 (#124)
+- deps: Update patch/minor dependencies (#125)
+- deps: Lock file maintenance (#123)
+- deps: Update patch/minor dependencies (#122)
+- deps: Lock file maintenance (#121)
+- deps: Update patch/minor dependencies (#120)
+- deps: Lock file maintenance (#119)
+- deps: Update patch/minor dependencies (#117)
+- deps: Update Node.js to v24.19.0 (#118)
+- deps: Lock file maintenance (#116)
+- deps: Update Node.js to v24.18.1 (#114)
+- deps: Update patch/minor dependencies (#115)
+- chore: schedule Renovate updates for Saturday mornings
+- deps: Update dependency discord-api-types to v0.38.51 (#112)
+- deps: Update patch/minor dependencies (#111)
+- deps: Update patch/minor dependencies (#110)
+- deps: Update patch/minor dependencies (#109)
+- deps: Update patch/minor dependencies (#108)
+- deps: Lock file maintenance (#107)
+- deps: Update pnpm to v11.15.0 (#106)
+- deps: Update patch/minor dependencies (#105)
+- deps: Update patch/minor dependencies (#104)
+- deps: Update actions/setup-node action to v7 (#103)
+- deps: Update patch/minor dependencies (#102)
+- deps: Update dependency tsdown to ^0.22.5 (#101)
+- deps: Update dependency typescript to v7 (#96)
+- deps: Lock file maintenance (#100)
+- deps: Update pnpm to v11.11.0 (#99)
+
 ## [0.0.2-alpha.2] - 2026-07-10
 
 - feat: expose bot on handler contexts
